@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>METAL GEAR SOLID — Shadow Moses</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --green: #00ff41;
+    --green-dim: #00bb30;
+    --green-dark: #003d0e;
+    --red: #ff2020;
+    --amber: #ffaa00;
+    --cyan: #00ccff;
+    --bg: #000;
+    --panel-bg: rgba(0, 10, 0, 0.92);
+    --border: #1a4a1a;
+    --text: #00cc33;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: #000;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Share Tech Mono', monospace;
+    overflow: hidden;
+    color: var(--green);
+  }
+
+  #wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    user-select: none;
+  }
+
+  #header {
+    width: 688px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px;
+    background: #000;
+    border: 1px solid var(--border);
+    border-bottom: none;
+  }
+
+  #header .title {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: var(--green);
+    text-shadow: 0 0 8px var(--green);
+  }
+
+  #header .subtitle {
+    font-size: 10px;
+    color: #336633;
+    letter-spacing: 2px;
+  }
+
+  #main {
+    display: flex;
+    gap: 0;
+  }
+
+  #leftPanel {
+    width: 160px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-right: none;
+    padding: 10px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  #rightPanel {
+    width: 160px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-left: none;
+    padding: 10px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  canvas#gameCanvas {
+    display: block;
+    image-rendering: pixelated;
+    border: 1px solid var(--border);
+    background: #000;
+    flex-shrink: 0;
+  }
+
+  .panel-label {
+    font-size: 9px;
+    color: #336633;
+    letter-spacing: 2px;
+    border-bottom: 1px solid #1a3a1a;
+    padding-bottom: 3px;
+    margin-bottom: 4px;
+  }
+
+  .stat-block {
+    background: rgba(0,20,0,0.6);
+    border: 1px solid #0a2a0a;
+    padding: 6px 8px;
+    border-radius: 2px;
+  }
+
+  .stat-label {
+    font-size: 8px;
+    color: #336633;
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+  }
+
+  .stat-val {
+    font-size: 14px;
+    color: var(--green);
+    font-weight: bold;
+  }
+
+  .hp-track {
+    width: 100%;
+    height: 10px;
+    background: #001500;
+    border: 1px solid #0a3a0a;
+    margin-top: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #hpFill {
+    height: 100%;
+    background: var(--green);
+    transition: width 0.15s, background 0.3s;
+    box-shadow: 0 0 6px currentColor;
+    position: relative;
+  }
+
+  #hpFill::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 2px; height: 100%;
+    background: #fff;
+    opacity: 0.5;
+  }
+
+  .stealth-indicator {
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    padding: 4px 0;
+    text-align: center;
+    transition: color 0.2s;
+  }
+
+  .alert-bar {
+    height: 6px;
+    width: 100%;
+    background: #001500;
+    border: 1px solid #0a2a0a;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #alertFill {
+    height: 100%;
+    background: var(--red);
+    width: 0%;
+    transition: width 0.1s;
+    box-shadow: 0 0 4px var(--red);
+  }
+
+  .weapon-box {
+    background: rgba(0,20,0,0.6);
+    border: 1px solid #0a2a0a;
+    padding: 6px 8px;
+  }
+
+  .weapon-name {
+    font-size: 11px;
+    color: var(--amber);
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+  }
+
+  .ammo-disp {
+    font-size: 13px;
+    color: var(--green);
+  }
+
+  .ammo-disp span { color: #336633; font-size: 10px; }
+
+  canvas#radar {
+    display: block;
+    border: 1px solid #0a3a0a;
+    background: #000a00;
+    image-rendering: pixelated;
+  }
+
+  .radar-wrap {
+    position: relative;
+  }
+
+  .radar-label {
+    font-size: 8px;
+    color: #336633;
+    text-align: center;
+    margin-top: 3px;
+    letter-spacing: 2px;
+  }
+
+  .key-hint {
+    font-size: 8px;
+    color: #224422;
+    line-height: 1.8;
+  }
+
+  .key-hint b {
+    color: #448844;
+    font-style: normal;
+    font-weight: normal;
+  }
+
+  .objective-box {
+    background: rgba(0,15,0,0.8);
+    border: 1px solid #0a2a0a;
+    padding: 5px 7px;
+    font-size: 9px;
+    color: #336633;
+    line-height: 1.6;
+  }
+
+  .objective-box .obj-title {
+    color: var(--cyan);
+    font-size: 9px;
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+  }
+
+  #codecOverlay {
+    display: none;
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(0,5,15,0.97);
+    border-top: 2px solid var(--cyan);
+    padding: 10px 14px 10px;
+    z-index: 10;
+  }
+
+  #codecOverlay.active { display: block; }
+
+  .codec-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .codec-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    color: #ffdd00;
+    letter-spacing: 2px;
+  }
+
+  .codec-freq {
+    font-size: 10px;
+    color: var(--cyan);
+    letter-spacing: 1px;
+  }
+
+  .codec-text {
+    font-size: 11px;
+    color: #99cccc;
+    line-height: 1.7;
+    min-height: 34px;
+  }
+
+  .codec-close {
+    font-size: 9px;
+    color: #336655;
+    text-align: right;
+    margin-top: 4px;
+  }
+
+  #alertOverlay {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Orbitron', monospace;
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--red);
+    text-shadow: 0 0 20px var(--red), 0 0 40px var(--red);
+    letter-spacing: 6px;
+    pointer-events: none;
+    z-index: 9;
+    animation: alertPulse 0.5s infinite alternate;
+  }
+
+  @keyframes alertPulse {
+    from { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+    to { opacity: 0.6; transform: translate(-50%,-50%) scale(1.04); }
+  }
+
+  #msgOverlay {
+    display: none;
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,5,0,0.95);
+    border: 1px solid var(--cyan);
+    padding: 12px 20px;
+    font-size: 12px;
+    color: var(--cyan);
+    text-align: center;
+    max-width: 300px;
+    line-height: 1.7;
+    z-index: 11;
+    white-space: pre-line;
+    box-shadow: 0 0 20px rgba(0,200,255,0.2);
+  }
+
+  #gameScreen {
+    position: relative;
+    width: 368px;
+  }
+
+  #scanline {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 3px,
+      rgba(0,0,0,0.08) 3px,
+      rgba(0,0,0,0.08) 4px
+    );
+    z-index: 20;
+  }
+
+  #footer {
+    width: 688px;
+    background: #000;
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 4px 12px;
+    font-size: 8px;
+    color: #1a3a1a;
+    letter-spacing: 1px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .game-over-screen {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    z-index: 30;
+  }
+
+  .game-over-screen.active { display: flex; }
+
+  .go-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    animation: alertPulse 1s infinite alternate;
+  }
+
+  .go-sub {
+    font-size: 12px;
+    color: #336633;
+    letter-spacing: 2px;
+  }
+
+  .go-btn {
+    margin-top: 10px;
+    background: transparent;
+    border: 1px solid var(--green);
+    color: var(--green);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    padding: 8px 24px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+
+  .go-btn:hover {
+    background: rgba(0,255,65,0.1);
+    box-shadow: 0 0 10px var(--green);
+  }
+
+  .items-list {
+    font-size: 9px;
+    color: #224422;
+    line-height: 2;
+  }
+
+  .items-list .collected {
+    color: #115511;
+    text-decoration: line-through;
+  }
+
+  .items-list .active {
+    color: #ffaa00;
+  }
+
+  #vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.6) 100%);
+    z-index: 19;
+  }
+</style>
+</head>
+<body>
+<div id="wrapper">
+  <div id="header">
+    <div>
+      <div class="title">METAL GEAR SOLID</div>
+      <div class="subtitle">TACTICAL ESPIONAGE ACTION</div>
+    </div>
+    <div style="text-align:right">
+      <div class="subtitle">SHADOW MOSES ISLAND</div>
+      <div class="subtitle" id="clockDisp">00:00:00</div>
+    </div>
+  </div>
+
+  <div id="main">
+    <!-- LEFT PANEL -->
+    <div id="leftPanel">
+      <div class="stat-block">
+        <div class="panel-label">LIFE</div>
+        <div class="stat-label">HP</div>
+        <div class="stat-val" id="hpVal">100</div>
+        <div class="hp-track"><div id="hpFill" style="width:100%"></div></div>
+      </div>
+
+      <div class="stat-block">
+        <div class="panel-label">ALERT</div>
+        <div class="stealth-indicator" id="stealthDisp">STEALTH</div>
+        <div class="alert-bar"><div id="alertFill"></div></div>
+      </div>
+
+      <div class="weapon-box">
+        <div class="panel-label">WEAPON</div>
+        <div class="weapon-name" id="weaponName">SOCOM</div>
+        <div class="ammo-disp"><span>AMMO </span><span id="ammoVal">15</span><span>/15</span></div>
+        <div class="ammo-disp" style="margin-top:4px"><span>NIKITA </span><span id="nikitaVal">12</span></div>
+      </div>
+
+      <div class="stat-block">
+        <div class="panel-label">STATUS</div>
+        <div style="font-size:9px; color:#336633; line-height:2;">
+          PRONE: <span id="proneDisp" style="color:#ffaa00">OFF</span><br>
+          SUPPRESSOR: <span style="color:#ffaa00">OFF</span><br>
+          NIKITA: <span id="nikitaDisp" style="color:#ffaa00">LOCKED</span>
+        </div>
+      </div>
+
+      <div class="objective-box">
+        <div class="obj-title">OBJECTIVE</div>
+        <div id="objText">Collect LV2 keycard and reach the secure corridor door.</div>
+      </div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="gameScreen">
+      <canvas id="gameCanvas" width="368" height="480"></canvas>
+      <div id="scanline"></div>
+      <div id="vignette"></div>
+      <div id="codecOverlay">
+        <div class="codec-header">
+          <div class="codec-name" id="codecName">COLONEL CAMPBELL</div>
+          <div class="codec-freq" id="codecFreq">▷ 140.85 MHz</div>
+        </div>
+        <div class="codec-text" id="codecText">Snake, infiltrate Shadow Moses and find the DARPA Chief. Avoid guard patrols. Good luck out there.</div>
+        <div class="codec-close">[C] or [ESC] to close</div>
+      </div>
+      <div id="alertOverlay">! ALERT !</div>
+      <div id="msgOverlay"></div>
+      <div class="game-over-screen" id="gameOverScreen">
+        <div class="go-title" style="color:var(--red)">SNAKE IS DEAD</div>
+        <div class="go-sub">GAME OVER</div>
+        <button class="go-btn" onclick="restartGame()">[ CONTINUE ]</button>
+      </div>
+      <div class="game-over-screen" id="winScreen">
+        <div class="go-title" style="color:var(--green)">MISSION COMPLETE</div>
+        <div class="go-sub">SNAKE COMPLETED THE MISSION</div>
+        <button class="go-btn" onclick="restartGame()">[ PLAY AGAIN ]</button>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div id="rightPanel">
+      <div class="radar-wrap">
+        <div class="panel-label">SOLITON RADAR</div>
+        <canvas id="radar" width="144" height="144"></canvas>
+        <div class="radar-label">AREA B2</div>
+      </div>
+
+      <div class="stat-block">
+        <div class="panel-label">CONTROLS</div>
+        <div class="key-hint">
+          <b>[WASD]</b> Move<br>
+          <b>[SPACE]</b> Prone<br>
+          <b>[F]</b> Fire weapon<br>
+          <b>[E]</b> Pick up item<br>
+          <b>[R]</b> Reload<br>
+          <b>[C]</b> CODEC<br>
+          <b>[1]</b> SOCOM<br>
+          <b>[2]</b> NIKITA<br>
+          <b>[ESC]</b> Cancel
+        </div>
+      </div>
+
+      <div class="stat-block">
+        <div class="panel-label">ITEMS</div>
+        <div class="items-list" id="itemsList">
+          ○ SOCOM AMMO (x2)<br>
+          ○ RATION<br>
+          ○ NIKITA PKG<br>
+          ○ LV2 KEYCARD
+        </div>
+      </div>
+
+      <div class="stat-block">
+        <div class="panel-label">MISSION LOG</div>
+        <div id="missionLog" style="font-size:8px; color:#224422; line-height:1.8; max-height:80px; overflow:hidden;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer">
+    <span>FOXHOUND UNIT — OUTER HEAVEN RENEGADES</span>
+    <span id="footerAlert" style="color:#1a1a1a">ALERT LEVEL: NORMAL</span>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const radarCanvas = document.getElementById('radar');
+const rctx = radarCanvas.getContext('2d');
+
+const GW = 368, GH = 480;
+const TILE = 32;
+
+// MAP: 0=empty(wall), 1=wall, 2=floor, 3=door
+const MAP = [
+  [1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,2,2,2,2,2,2,2,2,2,2,1],
+  [1,2,2,2,2,2,2,2,2,2,2,1],
+  [1,2,2,1,1,2,2,1,1,2,2,1],
+  [1,2,2,1,1,2,2,1,1,2,2,1],
+  [1,2,2,2,2,2,2,2,2,2,2,1],
+  [1,2,2,2,2,1,1,2,2,2,2,1],
+  [1,2,2,2,2,1,1,2,2,2,2,1],
+  [1,2,2,2,2,2,2,2,2,2,2,1],
+  [1,1,1,3,1,1,1,1,1,3,1,1],
+  [1,2,2,2,2,2,2,2,2,2,2,1],
+  [1,2,2,2,2,2,2,2,2,2,2,1],
+  [1,2,2,1,1,2,2,1,1,2,2,1],
+  [1,2,2,2,2,2,2,2,2,2,2,1],
+  [1,2,2,2,2,2,2,2,2,2,2,1],
+];
+const MROWS = MAP.length, MCOLS = MAP[0].length;
+
+const items = [
+  { tx:2, ty:1, type:'ammo',    label:'SOCOM AMMO', collected:false },
+  { tx:9, ty:1, type:'ammo',    label:'SOCOM AMMO', collected:false },
+  { tx:5, ty:13,type:'ration',  label:'RATION',     collected:false },
+  { tx:2, ty:13,type:'nikita',  label:'NIKITA PKG', collected:false },
+  { tx:7, ty:6, type:'keycard', label:'LV2 KEYCARD',collected:false },
+];
+
+const CODEC_MSGS = [
+  { name:'COLONEL CAMPBELL', freq:'140.85', text:'Snake, the DARPA Chief is somewhere in this facility. Find the Level 2 Keycard and breach the secure door. Avoid being spotted!' },
+  { name:'MERYL SILVERBURGH', freq:'140.15', text:"Snake! I'm watching your position on radar. The guards patrol in set patterns — watch their vision cones and time your movements." },
+  { name:'DR. NAOMI HUNTER', freq:'141.52', text:'Your FOXDIE nanomachines are stable. Collect rations to restore HP. Avoid prolonged contact with guards — each hit drains life force.' },
+  { name:'MASTER MILLER', freq:'141.80', text:"Snake, go prone to reduce your detection range. Guards have limited peripheral vision. Use cover and corners. Think before you act." },
+  { name:'MEI LING', freq:'140.96', text:"I've encoded your mission into the memory card. 'The wise adapt themselves to circumstances, as water molds itself to the pitcher.' Stay sharp, Snake!" },
+  { name:'OTACON', freq:'141.12', text:'I found the guard patrol schedules in the facility database! Each guard has a set route. Learn the patterns and you can slip right past them.' },
+];
+
+function makeSerpent() {
+  return {
+    x: 2*TILE+16, y: 14*TILE+16,
+    dir: -Math.PI/2,
+    speed: 2.4,
+    hp: 100, maxHp: 100,
+    prone: false,
+    ammo: 15, maxAmmo: 15,
+    nikita: 12,
+    weapon: 'socom',
+    keycardHeld: false,
+    invTimer: 0,
+    shootCD: 0,
+    moving: false,
+  };
+}
+
+function makeGuards() {
+  return [
+    { x:4*TILE+16, y:2*TILE+16, dir:0,
+      patrol:[{tx:2,ty:2},{tx:9,ty:2},{tx:9,ty:5},{tx:2,ty:5}], pi:0,
+      state:'patrol', alertT:0, searchT:0, stunT:0,
+      lkx:0, lky:0, vr:110, va:Math.PI/3 },
+    { x:7*TILE+16, y:8*TILE+16, dir:Math.PI,
+      patrol:[{tx:9,ty:8},{tx:2,ty:8},{tx:2,ty:6},{tx:9,ty:6}], pi:0,
+      state:'patrol', alertT:0, searchT:0, stunT:0,
+      lkx:0, lky:0, vr:110, va:Math.PI/3 },
+    { x:3*TILE+16, y:11*TILE+16, dir:Math.PI/2,
+      patrol:[{tx:2,ty:10},{tx:2,ty:14},{tx:5,ty:14},{tx:5,ty:10}], pi:0,
+      state:'patrol', alertT:0, searchT:0, stunT:0,
+      lkx:0, lky:0, vr:100, va:Math.PI/3 },
+    { x:8*TILE+16, y:11*TILE+16, dir:-Math.PI/2,
+      patrol:[{tx:9,ty:10},{tx:9,ty:14},{tx:6,ty:14},{tx:6,ty:10}], pi:0,
+      state:'patrol', alertT:0, searchT:0, stunT:0,
+      lkx:0, lky:0, vr:100, va:Math.PI/3 },
+  ];
+}
+
+let snake = makeSerpent();
+let guards = makeGuards();
+let bullets = [];
+let exclamations = [];
+let particles = [];
+let keys = {};
+let globalAlertLevel = 0;
+let frame = 0;
+let gameState = 'playing'; // playing, dead, win
+let startTime = Date.now();
+let missionLog = [];
+let codecOpen = false;
+let msgTimer = 0;
+let itemsChanged = false;
+
+function tileAt(tx,ty) {
+  if(tx<0||ty<0||tx>=MCOLS||ty>=MROWS) return 1;
+  return MAP[ty][tx];
+}
+function px2tx(px){ return Math.floor(px/TILE); }
+function px2ty(py){ return Math.floor(py/TILE); }
+
+function solidAt(px,py){
+  const t = tileAt(px2tx(px), px2ty(py));
+  return t===1;
+}
+
+function canMove(px,py,r){
+  const offsets = [[-r,-r],[r,-r],[-r,r],[r,r],[-r,0],[r,0],[0,-r],[0,r]];
+  for(const [ox,oy] of offsets) if(solidAt(px+ox, py+oy)) return false;
+  return true;
+}
+
+function los(x1,y1,x2,y2){
+  const dx=x2-x1, dy=y2-y1;
+  const steps=Math.ceil(Math.sqrt(dx*dx+dy*dy)/6);
+  for(let i=0;i<=steps;i++){
+    const fx=x1+dx*(i/steps), fy=y1+dy*(i/steps);
+    if(solidAt(fx,fy)) return false;
+  }
+  return true;
+}
+
+function guardSees(g){
+  const dx=snake.x-g.x, dy=snake.y-g.y;
+  const dist=Math.sqrt(dx*dx+dy*dy);
+  const range = snake.prone ? g.vr*0.45 : g.vr;
+  if(dist>range) return false;
+  const angle=Math.atan2(dy,dx);
+  let diff=angle-g.dir;
+  while(diff>Math.PI) diff-=2*Math.PI;
+  while(diff<-Math.PI) diff+=2*Math.PI;
+  if(Math.abs(diff)>g.va) return false;
+  return los(g.x,g.y,snake.x,snake.y);
+}
+
+function moveToward(g, tx, ty){
+  const dx=tx-g.x, dy=ty-g.y;
+  const dist=Math.sqrt(dx*dx+dy*dy);
+  if(dist<3) return true;
+  g.dir=Math.atan2(dy,dx);
+  const spd = g.state==='alert'?2.0:1.1;
+  const nx=g.x+Math.cos(g.dir)*spd, ny=g.y+Math.sin(g.dir)*spd;
+  if(canMove(nx,ny,9)){g.x=nx;g.y=ny;}
+  return false;
+}
+
+function logMsg(msg){
+  missionLog.unshift(msg);
+  if(missionLog.length>6) missionLog.pop();
+  document.getElementById('missionLog').innerHTML = missionLog.map(m=>`<span style="color:#224422">${m}</span>`).join('<br>');
+}
+
+function showMsg(text, dur=180){
+  const el=document.getElementById('msgOverlay');
+  el.textContent=text; el.style.display='block';
+  msgTimer=dur;
+}
+
+function spawnParticles(x,y,col,n){
+  for(let i=0;i<n;i++){
+    const angle=Math.random()*Math.PI*2;
+    const spd=1+Math.random()*3;
+    particles.push({x,y,vx:Math.cos(angle)*spd,vy:Math.sin(angle)*spd,life:20+Math.random()*20,col});
+  }
+}
+
+function shoot(){
+  if(snake.shootCD>0) return;
+  if(snake.weapon==='socom'){
+    if(snake.ammo<=0){ showMsg('Out of ammo! Press R to reload.',90); return; }
+    snake.ammo--;
+    snake.shootCD=18;
+    bullets.push({
+      x:snake.x+Math.cos(snake.dir)*16,
+      y:snake.y+Math.sin(snake.dir)*16,
+      vx:Math.cos(snake.dir)*8, vy:Math.sin(snake.dir)*8,
+      life:55, fromSnake:true, type:'socom'
+    });
+    document.getElementById('ammoVal').textContent=snake.ammo;
+  } else {
+    if(snake.nikita<=0){ showMsg('No NIKITA missiles!',90); return; }
+    snake.nikita--;
+    snake.shootCD=30;
+    bullets.push({
+      x:snake.x+Math.cos(snake.dir)*18,
+      y:snake.y+Math.sin(snake.dir)*18,
+      vx:Math.cos(snake.dir)*3.5, vy:Math.sin(snake.dir)*3.5,
+      life:160, fromSnake:true, type:'nikita', trail:[]
+    });
+    document.getElementById('nikitaVal').textContent=snake.nikita;
+  }
+}
+
+function updateGuard(g){
+  if(g.stunT>0){ g.stunT--; return; }
+  const sees=guardSees(g);
+  if(sees){
+    g.lkx=snake.x; g.lky=snake.y;
+    if(g.state!=='alert'){
+      exclamations.push({x:g.x,y:g.y-22,timer:80});
+      logMsg('Guard spotted Snake!');
+    }
+    g.state='alert'; g.alertT=360;
+    globalAlertLevel=Math.min(100,globalAlertLevel+3);
+  }
+  if(g.state==='alert'){
+    g.alertT--;
+    moveToward(g,g.lkx,g.lky);
+    if(g.alertT<=0){ g.state='search'; g.searchT=200; logMsg('Guard searching area...'); }
+  } else if(g.state==='search'){
+    g.searchT--;
+    g.dir+=0.025;
+    if(g.searchT<=0){ g.state='patrol'; logMsg('Guard returned to patrol.'); }
+  } else {
+    const pt=g.patrol[g.pi];
+    const done=moveToward(g, pt.tx*TILE+16, pt.ty*TILE+16);
+    if(done) g.pi=(g.pi+1)%g.patrol.length;
+  }
+  // damage snake
+  const dx=snake.x-g.x, dy=snake.y-g.y;
+  if(Math.sqrt(dx*dx+dy*dy)<18 && snake.invTimer<=0){
+    snake.hp=Math.max(0,snake.hp-0.4);
+    snake.invTimer=40;
+  }
+}
+
+function updateItems(){
+  if(!itemsChanged) return;
+  itemsChanged=false;
+  const el=document.getElementById('itemsList');
+  el.innerHTML=items.map(item=>{
+    const cls=item.collected?'collected':'active';
+    return `<span class="${cls}">${item.collected?'✓':'○'} ${item.label}</span>`;
+  }).join('<br>');
+}
+
+let _keys_prev = {};
+function wasPressed(k){ return keys[k] && !_keys_prev[k]; }
+
+function update(){
+  if(gameState!=='playing') return;
+  frame++;
+  if(snake.invTimer>0) snake.invTimer--;
+  if(snake.shootCD>0) snake.shootCD--;
+  if(msgTimer>0){ msgTimer--; if(msgTimer===0) document.getElementById('msgOverlay').style.display='none'; }
+
+  // MOVEMENT
+  let dx=0,dy=0;
+  if(keys['ArrowUp']||keys['w']||keys['W']) dy=-1;
+  if(keys['ArrowDown']||keys['s']||keys['S']) dy=1;
+  if(keys['ArrowLeft']||keys['a']||keys['A']) dx=-1;
+  if(keys['ArrowRight']||keys['d']||keys['D']) dx=1;
+  if(dx||dy){
+    snake.dir=Math.atan2(dy,dx);
+    const spd=snake.prone?0.9:snake.speed;
+    const nx=snake.x+dx*spd, ny=snake.y+dy*spd;
+    if(canMove(nx,snake.y,9)) snake.x=nx;
+    if(canMove(snake.x,ny,9)) snake.y=ny;
+    snake.moving=true;
+  } else snake.moving=false;
+
+  // PRONE
+  if(wasPressed(' ')){ snake.prone=!snake.prone; document.getElementById('proneDisp').textContent=snake.prone?'ON':'OFF'; }
+
+  // SHOOT
+  if(wasPressed('f')||wasPressed('F')) shoot();
+
+  // RELOAD
+  if(wasPressed('r')||wasPressed('R')){
+    snake.ammo=snake.maxAmmo;
+    document.getElementById('ammoVal').textContent=snake.ammo;
+    showMsg('Reload complete.',60);
+  }
+
+  // WEAPON SWITCH
+  if(wasPressed('1')){ snake.weapon='socom'; document.getElementById('weaponName').textContent='SOCOM'; }
+  if(wasPressed('2')){ snake.weapon='nikita'; document.getElementById('weaponName').textContent='NIKITA'; document.getElementById('nikitaDisp').textContent='ARMED'; }
+
+  // INTERACT
+  if(wasPressed('e')||wasPressed('E')){
+    for(const item of items){
+      if(item.collected) continue;
+      const ix=item.tx*TILE+16, iy=item.ty*TILE+16;
+      const d=Math.hypot(snake.x-ix,snake.y-iy);
+      if(d<38){
+        item.collected=true; itemsChanged=true;
+        if(item.type==='ammo'){ snake.ammo=Math.min(snake.maxAmmo,snake.ammo+30); document.getElementById('ammoVal').textContent=snake.ammo; showMsg('SOCOM ammo (+30) acquired.',120); logMsg('Picked up SOCOM ammo.'); }
+        else if(item.type==='ration'){ snake.hp=Math.min(snake.maxHp,snake.hp+50); showMsg('Ration consumed. HP restored.',120); logMsg('Ration used: HP +50'); }
+        else if(item.type==='nikita'){ snake.nikita+=6; document.getElementById('nikitaVal').textContent=snake.nikita; showMsg('NIKITA missiles (+6) acquired.',120); logMsg('Picked up NIKITA package.'); }
+        else if(item.type==='keycard'){ snake.keycardHeld=true; showMsg('Level 2 Keycard obtained!\nProceed to the secure door.',200); logMsg('LV2 Keycard secured!'); document.getElementById('objText').textContent='Keycard obtained. Reach the secure door in the middle corridor.'; }
+        break;
+      }
+    }
+  }
+
+  // CODEC
+  if(wasPressed('c')||wasPressed('C')){
+    codecOpen=!codecOpen;
+    const box=document.getElementById('codecOverlay');
+    if(codecOpen){
+      const msg=CODEC_MSGS[Math.floor(Math.random()*CODEC_MSGS.length)];
+      document.getElementById('codecName').textContent=msg.name;
+      document.getElementById('codecFreq').textContent='▷ '+msg.freq+' MHz';
+      document.getElementById('codecText').textContent=msg.text;
+      box.classList.add('active');
+    } else box.classList.remove('active');
+  }
+  if(wasPressed('Escape')){ codecOpen=false; document.getElementById('codecOverlay').classList.remove('active'); }
+
+  // BULLETS
+  for(let i=bullets.length-1;i>=0;i--){
+    const b=bullets[i];
+    if(b.type==='nikita' && b.trail) b.trail.push({x:b.x,y:b.y,life:20});
+    b.x+=b.vx; b.y+=b.vy; b.life--;
+    if(solidAt(b.x,b.y)||b.life<=0){ spawnParticles(b.x,b.y,'#ffaa00',4); bullets.splice(i,1); continue; }
+    if(b.fromSnake){
+      let hit=false;
+      for(const g of guards){
+        if(g.stunT>0) continue;
+        if(Math.hypot(b.x-g.x,b.y-g.y)<16){
+          g.stunT=270; g.state='stun';
+          spawnParticles(b.x,b.y,'#ffffff',8);
+          exclamations.push({x:g.x,y:g.y-22,timer:60,char:'*'});
+          logMsg('Guard neutralized!');
+          bullets.splice(i,1); hit=true; break;
+        }
+      }
+      if(hit) continue;
+    }
+  }
+
+  // UPDATE PARTICLES
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.1; p.life--;
+    if(p.life<=0) particles.splice(i,1);
+  }
+
+  // UPDATE GUARDS
+  for(const g of guards) updateGuard(g);
+
+  // ALERT DECAY
+  let anyAlert=guards.some(g=>g.state==='alert');
+  if(anyAlert){ globalAlertLevel=Math.min(100,globalAlertLevel+0.5); }
+  else { globalAlertLevel=Math.max(0,globalAlertLevel-0.3); }
+
+  // EXCLAMATIONS
+  for(let i=exclamations.length-1;i>=0;i--){
+    exclamations[i].timer--;
+    if(exclamations[i].timer<=0) exclamations.splice(i,1);
+  }
+
+  // CHECK DOOR
+  const stx=px2tx(snake.x), sty=px2ty(snake.y);
+  if(tileAt(stx,sty)===3 && snake.keycardHeld && sty===9){
+    gameState='win';
+    document.getElementById('winScreen').classList.add('active');
+    logMsg('Mission complete! Snake escaped!');
+  }
+
+  // DEATH
+  if(snake.hp<=0){
+    gameState='dead';
+    document.getElementById('gameOverScreen').classList.add('active');
+    logMsg('Snake KIA.');
+  }
+
+  // UPDATE UI
+  updateHUD();
+  updateItems();
+
+  // save prev keys
+  _keys_prev=Object.assign({},keys);
+}
+
+function updateHUD(){
+  const hpPct=snake.hp/snake.maxHp;
+  document.getElementById('hpFill').style.width=(hpPct*100)+'%';
+  document.getElementById('hpFill').style.background=hpPct>0.5?'#00ff41':hpPct>0.25?'#ffaa00':'#ff2020';
+  document.getElementById('hpVal').textContent=Math.ceil(snake.hp);
+
+  const aEl=document.getElementById('alertFill');
+  aEl.style.width=globalAlertLevel+'%';
+
+  const anyAlert=guards.some(g=>g.state==='alert');
+  const anySearch=guards.some(g=>g.state==='search');
+  const sEl=document.getElementById('stealthDisp');
+  const aOverlay=document.getElementById('alertOverlay');
+  const footerAlert=document.getElementById('footerAlert');
+
+  if(anyAlert){
+    sEl.textContent='! ALERT !'; sEl.style.color='#ff2020';
+    aOverlay.style.display='block';
+    footerAlert.textContent='ALERT LEVEL: COMBAT'; footerAlert.style.color='#ff2020';
+  } else if(anySearch){
+    sEl.textContent='CAUTION'; sEl.style.color='#ffaa00';
+    aOverlay.style.display='none';
+    footerAlert.textContent='ALERT LEVEL: CAUTION'; footerAlert.style.color='#ffaa00';
+  } else {
+    sEl.textContent=snake.prone?'PRONE':'STEALTH'; sEl.style.color=snake.prone?'#ffaa00':'#00cc33';
+    aOverlay.style.display='none';
+    footerAlert.textContent='ALERT LEVEL: NORMAL'; footerAlert.style.color='#1a3a1a';
+  }
+
+  // clock
+  const elapsed=Math.floor((Date.now()-startTime)/1000);
+  const h=String(Math.floor(elapsed/3600)).padStart(2,'0');
+  const m=String(Math.floor((elapsed%3600)/60)).padStart(2,'0');
+  const s=String(elapsed%60).padStart(2,'0');
+  document.getElementById('clockDisp').textContent=`${h}:${m}:${s}`;
+}
+
+// DRAWING
+function drawTile(tx,ty){
+  const px=tx*TILE, py=ty*TILE;
+  const t=MAP[ty][tx];
+  if(t===1){
+    ctx.fillStyle='#0d1a0d';
+    ctx.fillRect(px,py,TILE,TILE);
+    ctx.fillStyle='#111f11';
+    ctx.fillRect(px+1,py+1,TILE-2,TILE-2);
+    ctx.fillStyle='#071007';
+    ctx.fillRect(px,py,TILE,1);
+    ctx.fillRect(px,py,1,TILE);
+    ctx.fillStyle='#192919';
+    ctx.fillRect(px+TILE-1,py,1,TILE);
+    ctx.fillRect(px,py+TILE-1,TILE,1);
+  } else if(t===2){
+    const shade=(tx+ty)%2===0?'#0a110a':'#0c130c';
+    ctx.fillStyle=shade;
+    ctx.fillRect(px,py,TILE,TILE);
+    if((tx*3+ty*7)%11===0){
+      ctx.fillStyle='#0e170e';
+      ctx.fillRect(px+6,py+6,20,20);
+    }
+    // floor grid lines
+    ctx.strokeStyle='#0d150d';
+    ctx.lineWidth=0.5;
+    ctx.strokeRect(px+0.5,py+0.5,TILE-1,TILE-1);
+  } else if(t===3){
+    const open=snake.keycardHeld;
+    ctx.fillStyle=open?'#001800':'#141400';
+    ctx.fillRect(px,py,TILE,TILE);
+    ctx.fillStyle=open?'#00ff41':'#888800';
+    ctx.strokeStyle=open?'#00ff41':'#666600';
+    ctx.lineWidth=1;
+    ctx.strokeRect(px+4,py+4,TILE-8,TILE-8);
+    ctx.fillRect(px+TILE/2-1,py+4,2,TILE-8);
+    ctx.fillRect(px+4,py+TILE/2-1,TILE-8,2);
+    ctx.fillStyle=open?'#00ff41':'#aaaa00';
+    ctx.font='7px "Share Tech Mono"';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText(open?'OPEN':'LV2',px+TILE/2,py+TILE/2);
+    ctx.textBaseline='alphabetic';
+  }
+}
+
+function drawSnake(){
+  ctx.save();
+  ctx.translate(snake.x,snake.y);
+  if(snake.invTimer>0 && Math.floor(snake.invTimer/4)%2===1){ ctx.restore(); return; }
+
+  if(snake.prone){
+    ctx.rotate(snake.dir);
+    // body prone
+    ctx.fillStyle='#1e2e1e'; ctx.fillRect(-15,-7,30,14);
+    ctx.fillStyle='#2a4a2a'; ctx.fillRect(-13,-5,24,10);
+    // head
+    ctx.fillStyle='#5a7a5a'; ctx.fillRect(10,-5,8,10);
+    // gun
+    ctx.fillStyle='#2a2a2a'; ctx.fillRect(14,-2,10,4);
+    // bandana
+    ctx.fillStyle='#880000'; ctx.fillRect(10,-6,8,3);
+  } else {
+    // legs
+    const legOff=snake.moving?Math.sin(frame*0.25)*4:0;
+    ctx.fillStyle='#1e2e1e';
+    ctx.fillRect(-6,4+legOff,5,10);
+    ctx.fillRect(1,4-legOff,5,10);
+    // body
+    ctx.fillStyle='#1e2e1e'; ctx.fillRect(-9,-10,18,20);
+    ctx.fillStyle='#2a4a2a'; ctx.fillRect(-7,-8,14,18);
+    // vest
+    ctx.fillStyle='#1a3a1a'; ctx.fillRect(-5,-8,10,10);
+    // head
+    ctx.fillStyle='#3a5a3a'; ctx.fillRect(-4,-14,8,8);
+    // bandana
+    ctx.fillStyle='#880000'; ctx.fillRect(-5,-15,10,4);
+    // gun direction indicator
+    const gd=Math.atan2(Math.sin(snake.dir),Math.cos(snake.dir));
+    ctx.save();
+    ctx.rotate(gd);
+    ctx.fillStyle='#2a2a2a'; ctx.fillRect(6,-2,10,4);
+    ctx.restore();
+  }
+
+  // Vision cone (faint)
+  ctx.save();
+  ctx.rotate(snake.dir);
+  ctx.beginPath();
+  ctx.moveTo(10,0);
+  ctx.lineTo(60,-18);
+  ctx.lineTo(60,18);
+  ctx.closePath();
+  ctx.fillStyle='rgba(0,255,65,0.03)';
+  ctx.fill();
+  ctx.restore();
+
+  ctx.restore();
+}
+
+function drawGuard(g){
+  ctx.save();
+  ctx.translate(g.x,g.y);
+
+  // Vision cone
+  ctx.save();
+  ctx.rotate(g.dir);
+  const vr=g.vr;
+  const va=g.va;
+  ctx.beginPath();
+  ctx.moveTo(0,0);
+  ctx.arc(0,0,vr,-va,va);
+  ctx.closePath();
+  let coneCol;
+  if(g.state==='alert') coneCol='rgba(255,32,32,0.10)';
+  else if(g.state==='search') coneCol='rgba(255,170,0,0.08)';
+  else coneCol='rgba(255,200,50,0.04)';
+  ctx.fillStyle=coneCol;
+  ctx.fill();
+  ctx.strokeStyle=g.state==='alert'?'rgba(255,32,32,0.3)':g.state==='search'?'rgba(255,170,0,0.2)':'rgba(255,200,50,0.12)';
+  ctx.lineWidth=1;
+  ctx.stroke();
+  ctx.restore();
+
+  if(g.stunT>0){
+    // stunned — grey slumped
+    ctx.fillStyle='#333'; ctx.fillRect(-9,-8,18,16);
+    ctx.fillStyle='#555'; ctx.fillRect(-7,-6,14,12);
+    // stars
+    for(let s=0;s<3;s++){
+      const a=frame*0.1+s*Math.PI*2/3;
+      const sx=Math.cos(a)*8, sy=Math.sin(a)*8-14;
+      ctx.fillStyle='#ffff00';
+      ctx.font='9px serif';
+      ctx.textAlign='center';
+      ctx.fillText('★',sx,sy);
+    }
+    ctx.restore();
+    return;
+  }
+
+  const bodyCol=g.state==='alert'?'#5a1a1a':g.state==='search'?'#3a3a0a':'#3a2a0a';
+  const uniformCol=g.state==='alert'?'#8a2a2a':g.state==='search'?'#6a6a1a':'#5a4a1a';
+
+  // legs
+  const legOff=(g.state==='patrol'||g.state==='search')?Math.sin(frame*0.18+g.x)*3:0;
+  ctx.fillStyle=bodyCol;
+  ctx.fillRect(-5,4+legOff,5,10);
+  ctx.fillRect(0,4-legOff,5,10);
+
+  // body
+  ctx.fillStyle=bodyCol; ctx.fillRect(-9,-10,18,20);
+  ctx.fillStyle=uniformCol; ctx.fillRect(-7,-8,14,18);
+
+  // head / helmet
+  ctx.fillStyle='#6a5a2a'; ctx.fillRect(-5,-14,10,8);
+  ctx.fillStyle='#3a2a0a'; ctx.fillRect(-5,-14,10,3);
+
+  // gun
+  ctx.save();
+  ctx.rotate(g.dir);
+  ctx.fillStyle='#222'; ctx.fillRect(6,-2,14,4);
+  ctx.restore();
+
+  ctx.restore();
+}
+
+function drawItem(item){
+  if(item.collected) return;
+  const px=item.tx*TILE+16, py=item.ty*TILE+16;
+  const bob=Math.sin(frame*0.07)*3;
+  ctx.save();
+  ctx.translate(px, py+bob);
+
+  // glow
+  const grd=ctx.createRadialGradient(0,0,2,0,0,16);
+  let gc='#ffff00';
+  if(item.type==='ration') gc='#ff8800';
+  else if(item.type==='nikita') gc='#00ccff';
+  else if(item.type==='keycard') gc='#ff44ff';
+  grd.addColorStop(0,gc.replace('#','rgba(')+'88)'.replace('rgba(','rgba('));
+  // simple glow ring
+  ctx.beginPath();
+  ctx.arc(0,0,14,0,Math.PI*2);
+  ctx.fillStyle=(gc+'22');
+  ctx.fill();
+
+  const w=22,h=14;
+  ctx.fillStyle=item.type==='ammo'?'#cccc00':item.type==='ration'?'#cc6600':item.type==='nikita'?'#006688':'#8800aa';
+  ctx.fillRect(-w/2,-h/2,w,h);
+  ctx.strokeStyle='#ffffff33';
+  ctx.lineWidth=1;
+  ctx.strokeRect(-w/2,-h/2,w,h);
+
+  ctx.fillStyle='#ffffff';
+  ctx.font='bold 7px "Share Tech Mono"';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  const label=item.type==='ammo'?'9MM':item.type==='ration'?'RATION':item.type==='nikita'?'NKTA':'LV2';
+  ctx.fillText(label,0,0);
+  ctx.textBaseline='alphabetic';
+  ctx.restore();
+}
+
+function drawBullets(){
+  for(const b of bullets){
+    ctx.save();
+    ctx.translate(b.x,b.y);
+    if(b.type==='nikita'){
+      // trail
+      if(b.trail){
+        for(let i=0;i<b.trail.length;i++){
+          const t=b.trail[i];
+          t.life--;
+          if(t.life>0){
+            ctx.save();
+            ctx.globalAlpha=t.life/20*0.5;
+            ctx.fillStyle='#00ccff';
+            ctx.fillRect(t.x-b.x-2,t.y-b.y-2,4,4);
+            ctx.restore();
+          }
+        }
+        b.trail=b.trail.filter(t=>t.life>0);
+      }
+      ctx.rotate(Math.atan2(b.vy,b.vx));
+      ctx.fillStyle='#00ccff';
+      ctx.fillRect(-8,-3,16,6);
+      ctx.fillStyle='#ffffff';
+      ctx.fillRect(4,-2,6,4);
+    } else {
+      ctx.rotate(Math.atan2(b.vy,b.vx));
+      ctx.fillStyle='#ffff88';
+      ctx.fillRect(-4,-1,8,2);
+    }
+    ctx.restore();
+  }
+}
+
+function drawExclamations(){
+  for(const e of exclamations){
+    ctx.save();
+    ctx.globalAlpha=Math.min(1,e.timer/30);
+    ctx.font=`bold 18px "Orbitron"`;
+    ctx.textAlign='center';
+    ctx.fillStyle=e.char==='*'?'#ffffff':'#ff2020';
+    ctx.fillText(e.char||'!',e.x,e.y);
+    ctx.restore();
+  }
+}
+
+function drawParticles(){
+  for(const p of particles){
+    ctx.save();
+    ctx.globalAlpha=p.life/40;
+    ctx.fillStyle=p.col||'#ffaa00';
+    ctx.fillRect(p.x-2,p.y-2,4,4);
+    ctx.restore();
+  }
+}
+
+function drawRadar(){
+  const rw=radarCanvas.width, rh=radarCanvas.height;
+  const scaleX=rw/(MCOLS*TILE), scaleY=rh/(MROWS*TILE);
+
+  rctx.fillStyle='#000a00';
+  rctx.fillRect(0,0,rw,rh);
+
+  // Sweep line
+  const sweepAngle=(frame*0.03)%(Math.PI*2);
+  rctx.save();
+  rctx.translate(rw/2,rh/2);
+  const grd=rctx.createConicalGradient?null:null;
+  rctx.beginPath();
+  rctx.moveTo(0,0);
+  rctx.arc(0,0,Math.max(rw,rh),sweepAngle-0.4,sweepAngle);
+  rctx.closePath();
+  rctx.fillStyle='rgba(0,255,65,0.07)';
+  rctx.fill();
+  rctx.restore();
+
+  // Walls
+  for(let ty=0;ty<MROWS;ty++){
+    for(let tx=0;tx<MCOLS;tx++){
+      if(MAP[ty][tx]===1){
+        rctx.fillStyle='#002200';
+        rctx.fillRect(tx*TILE*scaleX, ty*TILE*scaleY, TILE*scaleX, TILE*scaleY);
+      }
+    }
+  }
+
+  // Grid
+  rctx.strokeStyle='#001500';
+  rctx.lineWidth=0.5;
+  for(let tx=0;tx<MCOLS;tx++){
+    rctx.beginPath(); rctx.moveTo(tx*TILE*scaleX,0); rctx.lineTo(tx*TILE*scaleX,rh); rctx.stroke();
+  }
+  for(let ty=0;ty<MROWS;ty++){
+    rctx.beginPath(); rctx.moveTo(0,ty*TILE*scaleY); rctx.lineTo(rw,ty*TILE*scaleY); rctx.stroke();
+  }
+
+  // Guards
+  for(const g of guards){
+    const rx=g.x*scaleX, ry=g.y*scaleY;
+    rctx.fillStyle=g.state==='alert'?'#ff2020':g.state==='stun'?'#444':g.state==='search'?'#ffaa00':'#ff6600';
+    rctx.fillRect(rx-3,ry-3,6,6);
+    // direction arrow
+    rctx.save();
+    rctx.translate(rx,ry);
+    rctx.rotate(g.dir);
+    rctx.strokeStyle=g.state==='alert'?'#ff2020':'#884400';
+    rctx.lineWidth=1;
+    rctx.beginPath(); rctx.moveTo(0,0); rctx.lineTo(9,0); rctx.stroke();
+    rctx.restore();
+  }
+
+  // Items
+  for(const item of items){
+    if(item.collected) continue;
+    const rx=item.tx*TILE*scaleX+TILE/2*scaleX, ry=item.ty*TILE*scaleY+TILE/2*scaleY;
+    rctx.fillStyle=item.type==='keycard'?'#ff44ff':'#ffff00';
+    rctx.fillRect(rx-2,ry-2,4,4);
+  }
+
+  // Snake (blinking)
+  if(frame%16<10){
+    const rx=snake.x*scaleX, ry=snake.y*scaleY;
+    rctx.fillStyle='#00ff41';
+    rctx.fillRect(rx-4,ry-4,8,8);
+    rctx.save();
+    rctx.translate(rx,ry);
+    rctx.rotate(snake.dir);
+    rctx.strokeStyle='#00ff41';
+    rctx.lineWidth=1.5;
+    rctx.beginPath(); rctx.moveTo(0,0); rctx.lineTo(10,0); rctx.stroke();
+    rctx.restore();
+  }
+
+  rctx.strokeStyle='#004400';
+  rctx.lineWidth=1;
+  rctx.strokeRect(0,0,rw,rh);
+  rctx.beginPath();
+  rctx.arc(rw/2,rh/2,rw/2-1,0,Math.PI*2);
+  rctx.strokeStyle='#003300';
+  rctx.stroke();
+}
+
+function draw(){
+  ctx.fillStyle='#000';
+  ctx.fillRect(0,0,GW,GH);
+
+  for(let ty=0;ty<MROWS;ty++){
+    for(let tx=0;tx<MCOLS;tx++){
+      drawTile(tx,ty);
+    }
+  }
+
+  for(const item of items) drawItem(item);
+  for(const g of guards) drawGuard(g);
+  drawBullets();
+  drawParticles();
+  drawSnake();
+  drawExclamations();
+
+  // Global alert red tint
+  const anyAlert=guards.some(g=>g.state==='alert');
+  if(anyAlert){
+    ctx.fillStyle=`rgba(255,0,0,${0.04+Math.sin(frame*0.15)*0.02})`;
+    ctx.fillRect(0,0,GW,GH);
+  }
+
+  // Prone HUD
+  if(snake.prone){
+    ctx.fillStyle='rgba(255,170,0,0.7)';
+    ctx.font='10px "Share Tech Mono"';
+    ctx.textAlign='left';
+    ctx.fillText('● PRONE',6,GH-8);
+  }
+
+  // Interaction prompt
+  for(const item of items){
+    if(item.collected) continue;
+    const ix=item.tx*TILE+16, iy=item.ty*TILE+16;
+    if(Math.hypot(snake.x-ix,snake.y-iy)<38){
+      ctx.fillStyle='rgba(0,255,65,0.85)';
+      ctx.font='10px "Share Tech Mono"';
+      ctx.textAlign='center';
+      ctx.fillText('[E] '+item.label, ix, iy-22);
+    }
+  }
+
+  drawRadar();
+}
+
+function restartGame(){
+  snake=makeSerpent();
+  guards=makeGuards();
+  bullets=[]; exclamations=[]; particles=[];
+  globalAlertLevel=0; frame=0;
+  gameState='playing'; startTime=Date.now();
+  missionLog=[];
+  codecOpen=false;
+  for(const item of items){ item.collected=false; }
+  itemsChanged=true;
+  document.getElementById('gameOverScreen').classList.remove('active');
+  document.getElementById('winScreen').classList.remove('active');
+  document.getElementById('msgOverlay').style.display='none';
+  document.getElementById('codecOverlay').classList.remove('active');
+  document.getElementById('objText').textContent='Collect LV2 keycard and reach the secure corridor door.';
+  document.getElementById('ammoVal').textContent=snake.ammo;
+  document.getElementById('nikitaVal').textContent=snake.nikita;
+  document.getElementById('proneDisp').textContent='OFF';
+  document.getElementById('weaponName').textContent='SOCOM';
+  document.getElementById('nikitaDisp').textContent='LOCKED';
+  updateItems();
+  logMsg('Mission started. Infiltrate Shadow Moses.');
+}
+
+document.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+});
+document.addEventListener('keyup',e=>{ keys[e.key]=false; });
+
+// Start
+logMsg('Mission started. Infiltrate Shadow Moses.');
+updateItems();
+
+// Open codec on start
+setTimeout(()=>{
+  const msg=CODEC_MSGS[0];
+  document.getElementById('codecName').textContent=msg.name;
+  document.getElementById('codecFreq').textContent='▷ '+msg.freq+' MHz';
+  document.getElementById('codecText').textContent=msg.text;
+  document.getElementById('codecOverlay').classList.add('active');
+  codecOpen=true;
+},600);
+
+function loop(){
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
