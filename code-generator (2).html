@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Code Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #080a0e;
+    --surface: #0e1118;
+    --surface2: #141820;
+    --surface3: #1a2030;
+    --border: #1e2535;
+    --border2: #2a3448;
+    --accent: #00d4ff;
+    --accent-dim: rgba(0,212,255,0.12);
+    --accent-border: rgba(0,212,255,0.25);
+    --green: #00ff9d;
+    --green-dim: rgba(0,255,157,0.1);
+    --amber: #ffb830;
+    --red: #ff4d6a;
+    --purple: #b06dfa;
+    --text: #cdd6f4;
+    --text2: #7a8aaa;
+    --text3: #3a4560;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 24px;
+    height: 54px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-icon {
+    width: 30px; height: 30px;
+    border: 1px solid var(--accent-border);
+    border-radius: 6px;
+    background: var(--accent-dim);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--accent);
+  }
+  .logo-name { font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+  .logo-tag  { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+
+  /* KEY BAR */
+  .key-bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 24px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .key-bar label {
+    font-size: 10px; font-family: var(--mono);
+    color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+  .key-bar input {
+    width: 320px;
+    background: var(--bg); color: var(--text);
+    border: 1px solid var(--border2); border-radius: 5px;
+    font-family: var(--mono); font-size: 12px;
+    padding: 5px 10px; outline: none;
+    transition: border-color 0.15s;
+  }
+  .key-bar input:focus { border-color: var(--accent); }
+  .key-bar input::placeholder { color: var(--text3); }
+  .key-status {
+    font-size: 10px; font-family: var(--mono);
+    padding: 3px 10px; border-radius: 20px; white-space: nowrap;
+  }
+  .key-status.set   { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,255,157,0.25); }
+  .key-status.unset { background: rgba(255,184,48,0.1); color: var(--amber); border: 1px solid rgba(255,184,48,0.25); }
+
+  /* LANG SELECTOR */
+  .lang-selector {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .lang-selector label { font-size: 10px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; }
+  .lang-selector select {
+    background: var(--bg); color: var(--text);
+    border: 1px solid var(--border2); border-radius: 5px;
+    font-family: var(--mono); font-size: 11px;
+    padding: 4px 8px; outline: none; cursor: pointer;
+  }
+  .lang-selector select:focus { border-color: var(--accent); }
+
+  /* MAIN LAYOUT */
+  .main {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* LEFT: CHAT PANEL */
+  .chat-panel {
+    display: flex; flex-direction: column;
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .panel-header {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 10px; font-family: var(--mono);
+    color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .clear-btn {
+    font-size: 10px; font-family: var(--mono);
+    color: var(--text3); background: none; border: none;
+    cursor: pointer; padding: 2px 6px; border-radius: 4px;
+    transition: color 0.15s;
+  }
+  .clear-btn:hover { color: var(--red); }
+
+  .history {
+    flex: 1; overflow-y: auto;
+    padding: 12px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .history::-webkit-scrollbar { width: 3px; }
+  .history::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* MESSAGES */
+  .msg {
+    display: flex; flex-direction: column; gap: 4px;
+    animation: msgIn 0.2s ease;
+  }
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .msg-role {
+    font-size: 9px; font-family: var(--mono);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    padding: 0 4px;
+  }
+  .msg.user .msg-role  { color: var(--accent); }
+  .msg.ai   .msg-role  { color: var(--purple); }
+
+  .msg-bubble {
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px; line-height: 1.55;
+  }
+  .msg.user .msg-bubble {
+    background: var(--accent-dim);
+    border: 1px solid var(--accent-border);
+    color: var(--text);
+  }
+  .msg.ai .msg-bubble {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text2);
+  }
+  .msg.ai .msg-bubble.has-code {
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .msg.ai .msg-bubble.has-code:hover {
+    border-color: var(--purple);
+    color: var(--text);
+  }
+  .code-preview {
+    margin-top: 6px;
+    padding: 6px 8px;
+    background: var(--bg);
+    border-radius: 5px;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--text3);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    border: 1px solid var(--border);
+  }
+
+  /* INPUT AREA */
+  .input-area {
+    padding: 12px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .input-wrap {
+    display: flex;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg);
+    transition: border-color 0.15s;
+  }
+  .input-wrap:focus-within { border-color: var(--accent); }
+
+  #promptInput {
+    flex: 1; background: transparent;
+    border: none; outline: none; resize: none;
+    font-family: var(--sans); font-size: 13px; line-height: 1.5;
+    color: var(--text); padding: 10px 12px;
+    min-height: 44px; max-height: 120px;
+  }
+  #promptInput::placeholder { color: var(--text3); }
+
+  .send-btn {
+    align-self: flex-end;
+    margin: 6px;
+    width: 32px; height: 32px;
+    background: var(--accent); color: var(--bg);
+    border: none; border-radius: 6px;
+    cursor: pointer; font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .send-btn:hover { background: #33ddff; transform: scale(1.05); }
+  .send-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+  .hint {
+    margin-top: 6px;
+    font-size: 10px; font-family: var(--mono); color: var(--text3);
+    text-align: center;
+  }
+
+  /* RIGHT: CODE OUTPUT */
+  .code-panel {
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  .code-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 16px; height: 42px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .code-lang-badge {
+    font-size: 10px; font-family: var(--mono);
+    padding: 2px 8px; border-radius: 4px;
+    background: var(--accent-dim); color: var(--accent);
+    border: 1px solid var(--accent-border);
+  }
+  .code-title {
+    font-size: 11px; font-family: var(--mono); color: var(--text3);
+    flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .copy-btn {
+    font-size: 11px; font-family: var(--mono);
+    padding: 4px 12px; border-radius: 5px;
+    background: transparent; color: var(--text2);
+    border: 1px solid var(--border2);
+    cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .copy-btn:hover { color: var(--green); border-color: var(--green); }
+  .copy-btn.copied { color: var(--green); border-color: var(--green); background: var(--green-dim); }
+
+  .code-scroll {
+    flex: 1; overflow: auto;
+    padding: 20px 24px;
+  }
+  .code-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+  .code-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  pre {
+    font-family: var(--mono); font-size: 13px;
+    line-height: 1.8; color: var(--text);
+    white-space: pre; tab-size: 2;
+    margin: 0;
+  }
+
+  /* Syntax highlighting via highlight.js (atom-one-dark theme) */
+
+  /* EMPTY STATE */
+  .empty-state {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 12px; color: var(--text3); text-align: center;
+    padding: 2rem;
+  }
+  .empty-glyph {
+    font-family: var(--mono); font-size: 48px;
+    opacity: 0.15; line-height: 1;
+  }
+  .empty-title { font-size: 14px; font-weight: 500; color: var(--text2); }
+  .empty-sub   { font-size: 12px; font-family: var(--mono); line-height: 1.6; }
+
+  /* THINKING */
+  .thinking-msg .msg-bubble {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 12px; color: var(--purple);
+  }
+  .dots { display: flex; gap: 4px; }
+  .dot {
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--purple);
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  .dot:nth-child(2) { animation-delay: 0.15s; }
+  .dot:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes pulse {
+    0%,80%,100% { transform: scale(0.5); opacity: 0.3; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  /* STREAMING CURSOR */
+  .cursor {
+    display: inline-block;
+    width: 2px; height: 14px;
+    background: var(--accent);
+    margin-left: 2px;
+    vertical-align: middle;
+    animation: blink-cursor 0.7s step-end infinite;
+  }
+  @keyframes blink-cursor { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* LINE NUMBERS */
+  .line-num {
+    display: inline-block;
+    width: 3ch; margin-right: 16px;
+    color: var(--text3); user-select: none;
+    text-align: right;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">&gt;_</div>
+    <div>
+      <div class="logo-name">CodeGen</div>
+      <div class="logo-tag">claude-sonnet · text → code</div>
+    </div>
+  </div>
+</header>
+
+<div class="key-bar">
+  <label for="apiKey">API Key</label>
+  <input type="password" id="apiKey" placeholder="sk-ant-api03-..." oninput="updateKeyStatus()" />
+  <span class="key-status unset" id="keyStatus">not set</span>
+  <div class="lang-selector">
+    <label for="langSelect">Language</label>
+    <select id="langSelect">
+      <option value="auto">Auto-detect</option>
+      <option value="JavaScript">JavaScript</option>
+      <option value="TypeScript">TypeScript</option>
+      <option value="Python">Python</option>
+      <option value="HTML/CSS">HTML / CSS</option>
+      <option value="Java">Java</option>
+      <option value="C++">C++</option>
+      <option value="C#">C#</option>
+      <option value="Go">Go</option>
+      <option value="Rust">Rust</option>
+      <option value="Swift">Swift</option>
+      <option value="Kotlin">Kotlin</option>
+      <option value="PHP">PHP</option>
+      <option value="Ruby">Ruby</option>
+      <option value="SQL">SQL</option>
+      <option value="Bash">Bash / Shell</option>
+    </select>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- LEFT: CONVERSATION -->
+  <div class="chat-panel">
+    <div class="panel-header">
+      <span>Conversation</span>
+      <button class="clear-btn" onclick="clearChat()">clear</button>
+    </div>
+
+    <div class="history" id="history">
+      <div class="msg ai">
+        <span class="msg-role">codegen</span>
+        <div class="msg-bubble">
+          Hey! Describe what you want to build and I'll write the code. Be as specific or vague as you like — I'll ask if I need more detail.
+        </div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrap">
+        <textarea id="promptInput" placeholder="e.g. a function that debounces any callback with a configurable delay..." rows="2"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendPrompt()" title="Send (Ctrl+Enter)">↑</button>
+      </div>
+      <div class="hint">Ctrl + Enter to send · click any response to view its code</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: CODE OUTPUT -->
+  <div class="code-panel" id="codePanel">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-glyph">{  }</div>
+      <div class="empty-title">No code generated yet</div>
+      <div class="empty-sub">Type a prompt on the left<br>and your code will appear here</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const apiKeyInput  = document.getElementById('apiKey');
+const langSelect   = document.getElementById('langSelect');
+const historyEl    = document.getElementById('history');
+const promptInput  = document.getElementById('promptInput');
+const sendBtn      = document.getElementById('sendBtn');
+const codePanel    = document.getElementById('codePanel');
+
+// conversation history sent to API
+let messages = [];
+// all generated code blocks indexed by message position
+let codeBlocks = [];
+let isGenerating = false;
+
+function updateKeyStatus() {
+  const el  = document.getElementById('keyStatus');
+  const val = apiKeyInput.value.trim();
+  if (val.startsWith('sk-ant-') && val.length > 30) {
+    el.textContent = '✓ key set';
+    el.className = 'key-status set';
+  } else if (val.length > 0) {
+    el.textContent = 'invalid format';
+    el.className = 'key-status unset';
+  } else {
+    el.textContent = 'not set';
+    el.className = 'key-status unset';
+  }
+}
+
+function clearChat() {
+  messages = [];
+  codeBlocks = [];
+  historyEl.innerHTML = `<div class="msg ai">
+    <span class="msg-role">codegen</span>
+    <div class="msg-bubble">Hey! Describe what you want to build and I'll write the code. Be as specific or vague as you like — I'll ask if I need more detail.</div>
+  </div>`;
+  showEmptyState();
+}
+
+function showEmptyState() {
+  codePanel.innerHTML = `<div class="empty-state" id="emptyState">
+    <div class="empty-glyph">{  }</div>
+    <div class="empty-title">No code generated yet</div>
+    <div class="empty-sub">Type a prompt on the left<br>and your code will appear here</div>
+  </div>`;
+}
+
+// ── Auto-resize textarea
+promptInput.addEventListener('input', () => {
+  promptInput.style.height = 'auto';
+  promptInput.style.height = Math.min(promptInput.scrollHeight, 120) + 'px';
+});
+
+promptInput.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); sendPrompt(); }
+});
+
+function addMessage(role, text, codeIdx) {
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+
+  const roleLabel = role === 'user' ? 'you' : 'codegen';
+  const preview = codeIdx !== undefined && codeBlocks[codeIdx]
+    ? `<div class="code-preview">${escHtml(codeBlocks[codeIdx].code.split('\n')[0])}</div>` : '';
+  const hasCode = codeIdx !== undefined && codeBlocks[codeIdx];
+
+  div.innerHTML = `
+    <span class="msg-role">${roleLabel}</span>
+    <div class="msg-bubble ${hasCode ? 'has-code' : ''}">
+      ${escHtml(text)}${preview}
+    </div>`;
+
+  if (hasCode) {
+    div.querySelector('.msg-bubble').addEventListener('click', () => {
+      showCode(codeIdx);
+    });
+  }
+
+  historyEl.appendChild(div);
+  historyEl.scrollTop = historyEl.scrollHeight;
+  return div;
+}
+
+function addThinking() {
+  const div = document.createElement('div');
+  div.className = 'msg ai thinking-msg';
+  div.innerHTML = `
+    <span class="msg-role">codegen</span>
+    <div class="msg-bubble">
+      <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      <span>generating…</span>
+    </div>`;
+  historyEl.appendChild(div);
+  historyEl.scrollTop = historyEl.scrollHeight;
+  return div;
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function extractCode(text) {
+  // pull out the first code block
+  const fence = text.match(/```[\w]*\n?([\s\S]*?)```/);
+  if (fence) return fence[1].trim();
+  // if no fence, check if it looks like raw code
+  if (/^(def |function |class |const |import |#include|package )/.test(text.trim())) return text.trim();
+  return null;
+}
+
+function stripCodeBlock(text) {
+  return text.replace(/```[\w]*\n?[\s\S]*?```/g, '[see code →]').trim();
+}
+
+function detectLangFromCode(code) {
+  if (/def |import \w|print\(/.test(code)) return 'Python';
+  if (/public\s+class|System\.out/.test(code)) return 'Java';
+  if (/#include|std::/.test(code)) return 'C++';
+  if (/func \w+\(|package main/.test(code)) return 'Go';
+  if (/fn \w|let mut/.test(code)) return 'Rust';
+  if (/<\?php/.test(code)) return 'PHP';
+  if (/SELECT |INSERT |CREATE TABLE/i.test(code)) return 'SQL';
+  if (/^\s*<(!DOCTYPE|html)/i.test(code)) return 'HTML';
+  if (/const |let |var |=>/.test(code)) return 'JavaScript';
+  return 'Code';
+}
+
+// Use highlight.js for safe, accurate syntax highlighting
+function highlight(code, lang) {
+  const langMap = {
+    'JavaScript': 'javascript', 'TypeScript': 'typescript',
+    'Python': 'python', 'Java': 'java', 'C++': 'cpp',
+    'C#': 'csharp', 'Go': 'go', 'Rust': 'rust',
+    'Swift': 'swift', 'Kotlin': 'kotlin', 'PHP': 'php',
+    'Ruby': 'ruby', 'SQL': 'sql', 'Bash': 'bash',
+    'HTML/CSS': 'html', 'HTML': 'html', 'CSS': 'css',
+  };
+  const hljsLang = langMap[lang];
+  try {
+    const result = hljsLang
+      ? hljs.highlight(code, { language: hljsLang, ignoreIllegals: true })
+      : hljs.highlightAuto(code);
+    // add line numbers by splitting the highlighted HTML on newlines
+    const lines = result.value.split('\n');
+    return lines.map((line, i) =>
+      `<span class="line-num">${String(i+1).padStart(3,' ')}</span>${line}`
+    ).join('\n');
+  } catch(e) {
+    // fallback: plain escaped text with line numbers
+    return code.split('\n').map((line, i) =>
+      `<span class="line-num">${String(i+1).padStart(3,' ')}</span>${escHtml(line)}`
+    ).join('\n');
+  }
+}
+
+function showCode(idx) {
+  const block = codeBlocks[idx];
+  if (!block) return;
+
+  const lang = block.lang || 'Code';
+  const highlighted = highlight(block.code, lang);
+
+  codePanel.innerHTML = `
+    <div class="code-header">
+      <span class="code-lang-badge">${lang}</span>
+      <span class="code-title">${escHtml(block.title || 'Generated code')}</span>
+      <button class="copy-btn" id="copyBtn" onclick="copyCode(${idx})">copy</button>
+    </div>
+    <div class="code-scroll">
+      <pre id="codeDisplay">${highlighted}</pre>
+    </div>`;
+}
+
+function copyCode(idx) {
+  const block = codeBlocks[idx];
+  if (!block) return;
+  navigator.clipboard.writeText(block.code).then(() => {
+    const btn = document.getElementById('copyBtn');
+    if (btn) { btn.textContent = '✓ copied'; btn.classList.add('copied'); }
+    setTimeout(() => {
+      if (btn) { btn.textContent = 'copy'; btn.classList.remove('copied'); }
+    }, 2000);
+  });
+}
+
+async function sendPrompt() {
+  const apiKey = apiKeyInput.value.trim();
+  const text   = promptInput.value.trim();
+
+  if (!apiKey || !apiKey.startsWith('sk-ant-')) {
+    apiKeyInput.focus();
+    return;
+  }
+  if (!text || isGenerating) return;
+
+  isGenerating = true;
+  sendBtn.disabled = true;
+  promptInput.value = '';
+  promptInput.style.height = 'auto';
+
+  // add to UI and API history
+  addMessage('user', text);
+  messages.push({ role: 'user', content: text });
+
+  const thinking = addThinking();
+
+  const lang = langSelect.value;
+  const langInstruction = lang === 'auto'
+    ? 'Choose the most appropriate programming language for the task.'
+    : `Write the code in ${lang}.`;
+
+  const systemPrompt = `You are an expert code generator. When the user describes something to build, you write clean, well-commented, production-quality code.
+
+Rules:
+- Always wrap your code in a single fenced code block using triple backticks with the language tag (e.g. \`\`\`javascript)
+- After the code block, write a brief 1-2 sentence explanation of what it does and any important notes
+- ${langInstruction}
+- If the request is ambiguous, make reasonable assumptions and note them
+- Write complete, runnable code — not pseudocode or partial snippets
+- Include helpful comments in the code itself`;
+
+  try {
+    const proxyUrl = 'https://proxy.killcors.com?url=' + encodeURIComponent('https://api.anthropic.com/v1/messages');
+
+    const res = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 8096,
+        system: systemPrompt,
+        messages: messages
+      })
+    });
+
+    const data = await res.json();
+    thinking.remove();
+
+    if (data?.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    if (!data?.content?.[0]?.text) throw new Error('Empty response');
+
+    const fullText = data.content[0].text;
+    const stopReason = data.stop_reason;
+    messages.push({ role: 'assistant', content: fullText });
+
+    // extract code
+    const code = extractCode(fullText);
+    const summary = code ? stripCodeBlock(fullText) : fullText;
+
+    let codeIdx;
+    if (code) {
+      const detectedLang = lang !== 'auto' ? lang : detectLangFromCode(code);
+      codeIdx = codeBlocks.length;
+      codeBlocks.push({ code, lang: detectedLang, title: text.slice(0, 60) });
+    }
+
+    addMessage('ai', summary, codeIdx);
+
+    // auto-show the latest code
+    if (codeIdx !== undefined) showCode(codeIdx);
+
+    // warn if cut off and offer continue
+    if (stopReason === 'max_tokens') {
+      const warnDiv = document.createElement('div');
+      warnDiv.className = 'msg ai';
+      warnDiv.innerHTML = `
+        <span class="msg-role">codegen</span>
+        <div class="msg-bubble" style="color:var(--amber);font-family:var(--mono);font-size:12px;display:flex;align-items:center;gap:10px;">
+          ⚠ Response cut off — code may be incomplete.
+          <button onclick="continueResponse()" style="font-family:var(--mono);font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--amber);background:transparent;color:var(--amber);cursor:pointer;">continue ↗</button>
+        </div>`;
+      historyEl.appendChild(warnDiv);
+      historyEl.scrollTop = historyEl.scrollHeight;
+    }
+
+  } catch (err) {
+    thinking.remove();
+    const errDiv = document.createElement('div');
+    errDiv.className = 'msg ai';
+    errDiv.innerHTML = `<span class="msg-role">error</span>
+      <div class="msg-bubble" style="color:var(--red);font-family:var(--mono);font-size:12px">✗ ${escHtml(err.message)}</div>`;
+    historyEl.appendChild(errDiv);
+    historyEl.scrollTop = historyEl.scrollHeight;
+  }
+
+  isGenerating = false;
+  sendBtn.disabled = false;
+  promptInput.focus();
+}
+
+async function continueResponse() {
+  const apiKey = apiKeyInput.value.trim();
+  if (!apiKey || isGenerating) return;
+
+  isGenerating = true;
+  sendBtn.disabled = true;
+
+  // Ask Claude to continue exactly where it left off
+  messages.push({ role: 'user', content: 'Continue exactly where you left off. Do not repeat anything.' });
+
+  const thinking = addThinking();
+
+  const lang = langSelect.value;
+  const langInstruction = lang === 'auto'
+    ? 'Choose the most appropriate programming language for the task.'
+    : `Write the code in ${lang}.`;
+
+  const systemPrompt = `You are an expert code generator. When the user describes something to build, you write clean, well-commented, production-quality code.
+
+Rules:
+- Always wrap your code in a single fenced code block using triple backticks with the language tag (e.g. \`\`\`javascript)
+- After the code block, write a brief 1-2 sentence explanation of what it does and any important notes
+- ${langInstruction}
+- If the request is ambiguous, make reasonable assumptions and note them
+- Write complete, runnable code — not pseudocode or partial snippets
+- Include helpful comments in the code itself`;
+
+  try {
+    const proxyUrl = 'https://proxy.killcors.com?url=' + encodeURIComponent('https://api.anthropic.com/v1/messages');
+
+    const res = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 8096,
+        system: systemPrompt,
+        messages: messages
+      })
+    });
+
+    const data = await res.json();
+    thinking.remove();
+
+    if (data?.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    if (!data?.content?.[0]?.text) throw new Error('Empty response');
+
+    const fullText = data.content[0].text;
+    const stopReason = data.stop_reason;
+    messages.push({ role: 'assistant', content: fullText });
+
+    // append to the last code block if we have one
+    const code = extractCode(fullText);
+    const summary = code ? stripCodeBlock(fullText) : fullText;
+
+    let codeIdx;
+    if (code && codeBlocks.length > 0) {
+      // append to the last block
+      const last = codeBlocks[codeBlocks.length - 1];
+      last.code = last.code + '\n' + code;
+      codeIdx = codeBlocks.length - 1;
+    } else if (code) {
+      const detectedLang = lang !== 'auto' ? lang : detectLangFromCode(code);
+      codeIdx = codeBlocks.length;
+      codeBlocks.push({ code, lang: detectedLang, title: 'Continued' });
+    }
+
+    addMessage('ai', summary || 'Continued above.', codeIdx);
+    if (codeIdx !== undefined) showCode(codeIdx);
+
+    if (stopReason === 'max_tokens') {
+      const warnDiv = document.createElement('div');
+      warnDiv.className = 'msg ai';
+      warnDiv.innerHTML = `
+        <span class="msg-role">codegen</span>
+        <div class="msg-bubble" style="color:var(--amber);font-family:var(--mono);font-size:12px;display:flex;align-items:center;gap:10px;">
+          ⚠ Still cut off.
+          <button onclick="continueResponse()" style="font-family:var(--mono);font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--amber);background:transparent;color:var(--amber);cursor:pointer;">continue again ↗</button>
+        </div>`;
+      historyEl.appendChild(warnDiv);
+      historyEl.scrollTop = historyEl.scrollHeight;
+    }
+
+  } catch (err) {
+    thinking.remove();
+    const errDiv = document.createElement('div');
+    errDiv.className = 'msg ai';
+    errDiv.innerHTML = `<span class="msg-role">error</span>
+      <div class="msg-bubble" style="color:var(--red);font-family:var(--mono);font-size:12px">✗ ${escHtml(err.message)}</div>`;
+    historyEl.appendChild(errDiv);
+  }
+
+  isGenerating = false;
+  sendBtn.disabled = false;
+  promptInput.focus();
+}
+</script>
+</body>
+</html>
