@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StreamVault — Free Live TV</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.7/hls.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg0:#080810;--bg1:#0f0f1c;--bg2:#161626;--bg3:#1c1c30;--bg4:#22223a;
+  --acc:#7c6dfa;--acc2:#f06daa;--asoft:rgba(124,109,250,.14);--aglow:rgba(124,109,250,.35);
+  --tx0:#eeeeff;--tx1:#9090b8;--tx2:#55557a;
+  --bdr:rgba(255,255,255,.055);--bdrA:rgba(124,109,250,.45);
+  --red:#ff3d5a;--grn:#22c55e;
+  --navW:68px;--navX:218px;--hdrH:54px;--r:11px;--rs:7px;
+  --f0:'Syne',sans-serif;--f1:'DM Sans',sans-serif;
+  --spd:.18s cubic-bezier(.4,0,.2,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--f1);background:var(--bg0);color:var(--tx0);display:flex;font-size:14px}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
+
+/* NAV */
+.nav{width:var(--navW);flex-shrink:0;background:var(--bg1);border-right:1px solid var(--bdr);display:flex;flex-direction:column;padding:10px 0;gap:2px;overflow:hidden;transition:width var(--spd);z-index:200}
+.nav:hover{width:var(--navX)}
+.nav:hover .nlbl,.nav:hover .nsec{opacity:1;transform:translateX(0)}
+.nav:hover .nlt{opacity:1}
+.nlogo{display:flex;align-items:center;gap:10px;padding:8px 15px 14px;border-bottom:1px solid var(--bdr);margin-bottom:6px}
+.nli{width:38px;height:38px;border-radius:9px;flex-shrink:0;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-size:17px}
+.nlt{font-family:var(--f0);font-size:15px;font-weight:700;white-space:nowrap;opacity:0;transition:opacity var(--spd);background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.ni{display:flex;align-items:center;gap:11px;padding:9px 15px;border-radius:var(--rs);cursor:pointer;color:var(--tx1);transition:all var(--spd);white-space:nowrap;width:calc(100% - 12px);margin:0 6px;position:relative}
+.ni:hover{background:var(--bg3);color:var(--tx0)}
+.ni.on{background:var(--asoft);color:var(--acc)}
+.ni.on::before{content:'';position:absolute;left:0;top:5px;bottom:5px;width:3px;background:var(--acc);border-radius:0 2px 2px 0}
+.nico{width:19px;height:19px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px}
+.nlbl{font-size:12.5px;font-weight:500;opacity:0;transform:translateX(-4px);transition:opacity var(--spd),transform var(--spd)}
+.ndiv{width:calc(100% - 20px);height:1px;background:var(--bdr);margin:5px 10px}
+.nsec{padding:4px 17px;font-size:10px;letter-spacing:.1em;color:var(--tx2);text-transform:uppercase;font-weight:600;white-space:nowrap;opacity:0;transition:opacity var(--spd)}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.hdr{height:var(--hdrH);flex-shrink:0;background:var(--bg1);border-bottom:1px solid var(--bdr);display:flex;align-items:center;padding:0 18px;gap:12px}
+.htitle{font-family:var(--f0);font-size:17px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srch{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:0 11px;transition:border-color var(--spd);flex-shrink:0}
+.srch:focus-within{border-color:var(--bdrA)}
+.srch svg{color:var(--tx2);flex-shrink:0}
+.srch input{background:none;border:none;outline:none;color:var(--tx0);font-family:var(--f1);font-size:13px;padding:7px 0;width:200px}
+.srch input::placeholder{color:var(--tx2)}
+.hbadge{display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--bdr);border-radius:6px;padding:4px 10px;font-size:12px;color:var(--tx1);cursor:pointer;transition:all var(--spd);white-space:nowrap;flex-shrink:0}
+.hbadge:hover{border-color:var(--bdrA);color:var(--acc)}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--grn);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;overflow-x:hidden}
+.page{display:none}.page.on{display:block}
+.pplayer{display:none}.pplayer.on{display:flex;flex-direction:column;height:100%}
+
+/* PLAYER */
+.pvid{background:#000;position:relative;flex-shrink:0}
+.pvid video{width:100%;display:block;max-height:54vh;background:#000}
+.pov{position:absolute;top:10px;left:10px;display:flex;gap:7px;align-items:center}
+.livebadge{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.08em}
+.povname{background:rgba(0,0,0,.72);color:#fff;font-size:12px;padding:3px 9px;border-radius:4px;backdrop-filter:blur(4px)}
+.pspin{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#000;color:var(--tx1);flex-direction:column;gap:10px;font-size:13px}
+.ring{width:34px;height:34px;border:3px solid var(--bg4);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pmeta{padding:13px 18px 10px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid var(--bdr);flex-shrink:0}
+.pmeta h2{font-family:var(--f0);font-size:19px;font-weight:600;margin-bottom:4px}
+.psub{color:var(--tx1);font-size:12px;display:flex;gap:8px;align-items:center}
+.pbrow{display:flex;gap:7px}
+.btn{padding:7px 14px;border-radius:var(--rs);border:1px solid var(--bdr);background:var(--bg2);color:var(--tx1);font-family:var(--f1);font-size:12px;cursor:pointer;transition:all var(--spd);display:flex;align-items:center;gap:5px}
+.btn:hover{border-color:var(--bdrA);color:var(--acc)}
+.btn.acc{background:var(--acc);color:#fff;border-color:var(--acc)}.btn.acc:hover{opacity:.9}
+.related{flex:1;overflow-y:auto;padding:14px 18px}
+
+/* SECTION TITLE */
+.stitle{font-family:var(--f0);font-size:12px;font-weight:600;color:var(--tx2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.stitle::after{content:'';flex:1;height:1px;background:var(--bdr)}
+
+/* FILTERS */
+.pfiltbar{display:flex;flex-wrap:wrap;gap:5px;padding:14px 18px 0}
+.ppill{padding:4px 11px;border-radius:20px;border:1px solid var(--bdr);background:var(--bg2);color:var(--tx1);font-size:12px;font-weight:500;cursor:pointer;transition:all var(--spd);white-space:nowrap}
+.ppill:hover{border-color:var(--bdrA);color:var(--tx0)}
+.ppill.on{border-color:var(--acc);color:var(--acc);background:var(--asoft)}
+.gchips{display:flex;gap:5px;flex-wrap:wrap;padding:10px 18px}
+.gc{padding:3px 9px;border-radius:14px;border:1px solid var(--bdr);background:transparent;color:var(--tx2);font-size:11px;cursor:pointer;transition:all var(--spd)}
+.gc:hover{color:var(--tx1);border-color:var(--bdrA)}
+.gc.on{color:var(--tx0);border-color:var(--acc);background:var(--asoft)}
+.tbar{display:flex;align-items:center;gap:9px;padding:10px 18px;border-bottom:1px solid var(--bdr);flex-shrink:0}
+.tcnt{color:var(--tx2);font-size:12px;flex:1}
+.vsort{background:var(--bg2);border:1px solid var(--bdr);color:var(--tx1);font-size:12px;padding:4px 7px;border-radius:6px;outline:none;cursor:pointer;font-family:var(--f1)}
+.vbtns{display:flex;gap:2px}
+.vb{width:28px;height:26px;border-radius:5px;border:1px solid var(--bdr);background:transparent;color:var(--tx2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all var(--spd);font-size:14px}
+.vb:hover{color:var(--tx0)}
+.vb.on{background:var(--bg3);color:var(--acc);border-color:var(--bdrA)}
+
+/* CHANNEL GRID */
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:9px;padding:16px 18px}
+.ccard{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);padding:13px;cursor:pointer;transition:all var(--spd);display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden}
+.ccard::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--asoft),transparent);opacity:0;transition:opacity var(--spd)}
+.ccard:hover{border-color:var(--bdrA);transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.4)}
+.ccard:hover::before{opacity:1}
+.ccard.now{border-color:var(--acc)}
+.ctag{position:absolute;top:7px;right:7px;font-size:9px;padding:2px 5px;border-radius:3px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.clogo{width:44px;height:44px;background:var(--bg3);border-radius:var(--rs);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.clogo img{width:100%;height:100%;object-fit:contain;padding:3px}
+.cph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--acc);font-family:var(--f0)}
+.cname{font-size:12.5px;font-weight:500;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cgrp{font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.nowdot{position:absolute;bottom:7px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulse 1.5s infinite;display:none}
+.ccard.now .nowdot{display:block}
+
+/* LIST */
+.clist{display:flex;flex-direction:column;gap:3px;padding:12px 18px}
+.crow{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:var(--rs);cursor:pointer;transition:background var(--spd);border:1px solid transparent}
+.crow:hover{background:var(--bg2);border-color:var(--bdr)}
+.crow.now{background:var(--asoft);border-color:var(--bdrA)}
+.crlogo{width:34px;height:34px;border-radius:6px;background:var(--bg3);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.crlogo img{width:100%;height:100%;object-fit:contain;padding:2px}
+.crname{flex:1;font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crgrp{font-size:11px;color:var(--tx2);width:90px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+.crprov{font-size:9.5px;padding:2px 6px;border-radius:3px;font-weight:600;flex-shrink:0}
+
+/* HERO */
+.hero{background:linear-gradient(140deg,#130e2e 0%,#0a0a18 65%);border:1px solid var(--bdr);border-radius:var(--r);padding:26px;margin:18px 18px 0;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50px;right:-50px;width:220px;height:220px;background:radial-gradient(circle,var(--aglow),transparent 70%);pointer-events:none}
+.hero h1{font-family:var(--f0);font-size:22px;font-weight:700;margin-bottom:5px;background:linear-gradient(135deg,var(--tx0),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{color:var(--tx1);font-size:13px;line-height:1.65;max-width:520px}
+.hstats{display:flex;gap:22px;margin-top:14px}
+.hsv{font-family:var(--f0);font-size:21px;font-weight:700;color:var(--acc)}
+.hsl{font-size:11px;color:var(--tx2)}
+
+/* PROVIDERS */
+.pvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:11px;padding:18px}
+.pvcard{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);padding:18px;cursor:pointer;transition:all var(--spd);position:relative;overflow:hidden}
+.pvcard:hover{border-color:var(--bdrA);transform:translateY(-2px)}
+.pvhdr{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+.pvicon{width:42px;height:42px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.pvname{font-family:var(--f0);font-size:14px;font-weight:600}
+.pvkey{font-size:11px;color:var(--tx2);font-family:monospace;margin-top:1px}
+.pvsv{font-size:22px;font-weight:700;font-family:var(--f0)}
+.pvsl{font-size:10px;color:var(--tx2);margin-top:2px}
+.pvauth{margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr);font-size:11px;color:var(--tx2)}
+.pvst{font-size:10px;padding:2px 7px;border-radius:12px;font-weight:600;margin-left:auto;flex-shrink:0}
+.pvst.ok{background:rgba(34,197,94,.15);color:#22c55e}
+.pvst.ld{background:rgba(124,109,250,.15);color:var(--acc)}
+.pvst.er{background:rgba(255,61,90,.15);color:var(--red)}
+.pvst.pd{background:rgba(255,255,255,.06);color:var(--tx2)}
+
+/* LOADING */
+#loadOv{position:fixed;inset:0;background:var(--bg0);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+.lring{width:48px;height:48px;border:4px solid var(--bg3);border-top-color:var(--acc);border-radius:50%;animation:spin .9s linear infinite}
+.ltitle{font-family:var(--f0);font-size:20px;font-weight:700;background:linear-gradient(135deg,var(--tx0),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.lpbar{width:280px;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.lpb{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:2px;transition:width .3s ease}
+#lstat{font-size:12px;color:var(--tx2);text-align:center;max-width:320px;line-height:1.6}
+.lprovs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:380px}
+.lp{font-size:10.5px;padding:3px 9px;border-radius:12px;border:1px solid var(--bdr);color:var(--tx2);transition:all .3s}
+.lp.ld{border-color:var(--acc);color:var(--acc);background:var(--asoft);animation:flicker 1.2s infinite}
+.lp.ok{border-color:var(--grn);color:var(--grn);background:rgba(34,197,94,.1)}
+.lp.er{border-color:var(--red);color:var(--red);background:rgba(255,61,90,.08)}
+@keyframes flicker{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* EMPTY */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:52px 20px;color:var(--tx2);gap:10px;text-align:center}
+.empty .ei{font-size:36px}
+.empty .et{font-size:15px;color:var(--tx1)}
+
+/* SETTINGS */
+.sgrid{display:grid;grid-template-columns:190px 1fr;gap:18px;padding:18px}
+.snav{display:flex;flex-direction:column;gap:2px}
+.sni{padding:8px 12px;border-radius:var(--rs);cursor:pointer;color:var(--tx1);font-size:12.5px;transition:all var(--spd);display:flex;align-items:center;gap:7px}
+.sni:hover{background:var(--bg2);color:var(--tx0)}
+.sni.on{background:var(--asoft);color:var(--acc)}
+.spanel{display:none}.spanel.on{display:block}
+.ssec{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);padding:18px;margin-bottom:12px}
+.ssect{font-family:var(--f0);font-size:13px;font-weight:600;margin-bottom:14px;padding-bottom:9px;border-bottom:1px solid var(--bdr)}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bdr)}
+.srow:last-child{border-bottom:none;padding-bottom:0}
+.srl{font-size:12.5px}
+.srs{font-size:11px;color:var(--tx2);margin-top:1px}
+.sinp{background:var(--bg3);border:1px solid var(--bdr);color:var(--tx0);font-family:var(--f1);font-size:12px;padding:6px 9px;border-radius:6px;outline:none;width:190px;transition:border-color var(--spd)}
+.sinp:focus{border-color:var(--bdrA)}
+.tog{width:36px;height:20px;border-radius:10px;background:var(--bg3);border:1px solid var(--bdr);cursor:pointer;position:relative;transition:background var(--spd);flex-shrink:0}
+.tog.on{background:var(--acc);border-color:var(--acc)}
+.tog::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform var(--spd)}
+.tog.on::after{transform:translateX(16px)}
+
+/* TOAST */
+.toasts{position:fixed;bottom:18px;right:18px;z-index:9998;display:flex;flex-direction:column;gap:7px}
+.toast{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--rs);padding:9px 14px;font-size:12.5px;color:var(--tx0);box-shadow:0 4px 18px rgba(0,0,0,.5);display:flex;align-items:center;gap:7px;animation:tsin .28s ease}
+.toast.s{border-left:3px solid var(--grn)}
+.toast.e{border-left:3px solid var(--red)}
+.toast.i{border-left:3px solid var(--acc)}
+@keyframes tsin{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* STATUS */
+.sbar{height:26px;background:var(--bg1);border-top:1px solid var(--bdr);display:flex;align-items:center;padding:0 18px;gap:10px;font-size:11px;color:var(--tx2);flex-shrink:0}
+.sbar-np{display:none;align-items:center;gap:5px;color:var(--acc)}
+
+@media(max-width:700px){.nav{width:52px}.cgrid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}.sgrid{grid-template-columns:1fr}}
+
+/* ═══ FLOATING PiP PLAYER ═══ */
+#pip{
+  position:fixed;
+  bottom:44px;right:18px;
+  width:340px;
+  background:var(--bg1);
+  border:1px solid var(--bdrA);
+  border-radius:14px;
+  overflow:hidden;
+  box-shadow:0 12px 48px rgba(0,0,0,.7);
+  z-index:8000;
+  display:flex;flex-direction:column;
+  transition:box-shadow .2s;
+  user-select:none;
+}
+#pip:hover{box-shadow:0 16px 56px rgba(0,0,0,.85)}
+
+/* drag handle / header */
+#pipDrag{
+  display:flex;align-items:center;gap:9px;
+  padding:9px 12px;
+  background:var(--bg2);
+  cursor:grab;
+  border-bottom:1px solid var(--bdr);
+  flex-shrink:0;
+}
+#pipDrag:active{cursor:grabbing}
+#pipLogoWrap{
+  width:32px;height:32px;border-radius:7px;
+  overflow:hidden;background:var(--bg3);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+#pipLogoWrap img,#pipLogoWrap svg{width:100%;height:100%;object-fit:contain;padding:2px}
+#pipInfo{flex:1;min-width:0}
+#pipName{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--tx0)}
+#pipSub{font-size:10.5px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pipBadge{background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:.07em;flex-shrink:0}
+
+/* video */
+#pipVidWrap{position:relative;background:#000;flex-shrink:0}
+#pipVidWrap video{width:100%;display:block;aspect-ratio:16/9;background:#000}
+#pipSpin{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#000;flex-direction:column;gap:8px;font-size:12px;color:var(--tx1)}
+
+/* control bar */
+#pipBar{
+  display:flex;align-items:center;gap:4px;
+  padding:7px 10px;background:var(--bg2);
+  border-top:1px solid var(--bdr);
+  flex-shrink:0;
+}
+.pipBtn{
+  flex:1;padding:5px 0;border-radius:6px;
+  border:1px solid var(--bdr);background:transparent;
+  color:var(--tx1);font-size:13px;cursor:pointer;
+  transition:all .15s;font-family:var(--f1);
+}
+.pipBtn:hover{background:var(--bg3);color:var(--tx0);border-color:var(--bdrA)}
+.pipClose{color:var(--red)}
+.pipClose:hover{background:rgba(255,61,90,.1);border-color:var(--red)}
+
+/* ═══ FULLSCREEN OVERLAY ═══ */
+#fsOverlay{
+  position:fixed;inset:0;z-index:9500;
+  background:#000;
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;
+}
+#fsVid{
+  width:100%;height:100%;
+  object-fit:contain;
+  display:block;
+}
+/* HUD chrome — fades in on hover */
+#fsChrome{
+  position:absolute;bottom:0;left:0;right:0;
+  padding:20px 24px;
+  background:linear-gradient(transparent,rgba(0,0,0,.82));
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  opacity:0;transition:opacity .25s;
+  pointer-events:none;
+}
+#fsOverlay:hover #fsChrome{opacity:1;pointer-events:auto}
+#fsChromeLeft{display:flex;align-items:center;gap:12px}
+#fsLogo{width:44px;height:44px;border-radius:9px;overflow:hidden;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#fsLogo img,#fsLogo svg{width:100%;height:100%;object-fit:contain;padding:3px}
+#fsName{font-size:18px;font-weight:700;font-family:var(--f0);color:#fff}
+#fsSub{font-size:12px;color:rgba(255,255,255,.6);margin-top:2px}
+#fsBadge{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.07em}
+#fsChromeRight{display:flex;gap:8px;flex-shrink:0}
+.fsBtn{
+  padding:8px 16px;border-radius:8px;
+  border:1px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.1);
+  color:#fff;font-size:12px;cursor:pointer;
+  transition:all .15s;font-family:var(--f1);
+  backdrop-filter:blur(4px);
+}
+.fsBtn:hover{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.4)}
+</style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div id="loadOv">
+  <div class="lring"></div>
+  <div class="ltitle">StreamVault</div>
+  <div class="lpbar"><div class="lpb" id="lpb" style="width:0%"></div></div>
+  <div id="lstat">Initializing…</div>
+  <div class="lprovs" id="lprovs"></div>
+</div>
+
+<!-- NAV RAIL -->
+<nav class="nav">
+  <div class="nlogo">
+    <div class="nli">📺</div>
+    <span class="nlt">StreamVault</span>
+  </div>
+  <div class="ni on" data-p="home"><div class="nico">🏠</div><span class="nlbl">Home</span></div>
+  <div class="ni" data-p="live"><div class="nico">📡</div><span class="nlbl">Live TV</span></div>
+  <div class="ni" data-p="favorites"><div class="nico">⭐</div><span class="nlbl">Favorites</span></div>
+  <div class="ndiv"></div>
+  <div class="nsec">Providers</div>
+  <div class="ni" data-p="providers"><div class="nico">🔌</div><span class="nlbl">All Sources</span></div>
+  <div class="ndiv"></div>
+  <div class="ni" data-p="settings"><div class="nico">⚙️</div><span class="nlbl">Settings</span></div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="hdr">
+    <div class="htitle" id="htitle">Home</div>
+    <div class="srch">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input placeholder="Search channels…" id="srchInp" oninput="onSearch(this.value)">
+    </div>
+    <div class="hbadge" id="hbadge" onclick="fullRefresh()">
+      <div class="dot"></div>
+      <span id="hbadgeTxt">Loading…</span>
+    </div>
+  </div>
+
+  <div class="content" id="content">
+
+    <!-- HOME -->
+    <div class="page on" id="page-home">
+      <div class="hero">
+        <h1>Free Live TV — No Subscription</h1>
+        <p>Aggregates channels from 16 FAST providers: Pluto TV, Plex, Samsung TV+, Tubi, Roku, LG, Vizio, Xumo, DistroTV, TCL+, Stirr, PBS, Tablo, Xiaomi, Fire TV, and Free-TV.</p>
+        <div class="hstats">
+          <div><div class="hsv" id="sTotal">—</div><div class="hsl">Channels loaded</div></div>
+          <div><div class="hsv" id="sSrc">—</div><div class="hsl">Providers online</div></div>
+          <div><div class="hsv" id="sGrp">—</div><div class="hsl">Categories</div></div>
+        </div>
+      </div>
+      <div style="padding:18px">
+        <div class="stitle" style="margin-bottom:14px">Featured Channels</div>
+        <div class="cgrid" id="featGrid"></div>
+      </div>
+    </div>
+
+    <!-- LIVE TV -->
+    <div class="page" id="page-live">
+      <div class="pfiltbar" id="provFilts"></div>
+      <div class="gchips" id="grpChips"></div>
+      <div class="tbar">
+        <div class="tcnt" id="tcnt">Loading…</div>
+        <select class="vsort" onchange="doSort(this.value)">
+          <option value="name">A–Z</option>
+          <option value="provider">Provider</option>
+          <option value="group">Category</option>
+        </select>
+        <div class="vbtns">
+          <button class="vb on" id="vbG" onclick="setView('grid')">⊞</button>
+          <button class="vb" id="vbL" onclick="setView('list')">☰</button>
+        </div>
+      </div>
+      <div id="chCont" style="display:flex;flex-direction:column;min-height:100%">
+        <div class="cgrid" id="chGrid"></div>
+        <div class="clist" id="chList" style="display:none"></div>
+        <div id="vSentinel" style="height:1px;flex-shrink:0"></div>
+      </div>
+    </div>
+
+    <!-- FAVORITES -->
+    <div class="page" id="page-favorites">
+      <div style="padding:18px">
+        <div class="stitle" style="margin-bottom:14px">Saved Favorites</div>
+        <div id="favCont"></div>
+      </div>
+    </div>
+
+    <!-- PROVIDERS -->
+    <div class="page" id="page-providers">
+      <div class="pvgrid" id="pvGrid"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+      <div class="sgrid">
+        <div class="snav">
+          <div class="sni on" onclick="stab('general',this)">⚙️ General</div>
+          <div class="sni" onclick="stab('playback',this)">▶️ Playback</div>
+          <div class="sni" onclick="stab('about',this)">ℹ️ About</div>
+        </div>
+        <div>
+          <div class="spanel on" id="stab-general">
+            <div class="ssec">
+              <div class="ssect">CORS Proxy</div>
+              <div class="srow">
+                <div><div class="srl">Proxy URL prefix</div><div class="srs">Prepended to every M3U request</div></div>
+                <input class="sinp" id="proxyInp" oninput="saveCfg()">
+              </div>
+              <div style="margin-top:12px;display:flex;gap:8px">
+                <button class="btn acc" onclick="fullRefresh()">↺ Reload All Sources</button>
+              </div>
+            </div>
+            <div class="ssec">
+              <div class="ssect">Playback</div>
+              <div class="srow"><div><div class="srl">Autoplay on select</div></div><div class="tog on" id="togAP" onclick="togCfg('autoplay','togAP')"></div></div>
+            </div>
+          </div>
+          <div class="spanel" id="stab-playback">
+            <div class="ssec">
+              <div class="ssect">HLS.js Settings</div>
+              <div class="srow"><div><div class="srl">Max buffer (seconds)</div></div><input class="sinp" type="number" value="30" id="bufLen" style="width:70px" oninput="saveCfg()"></div>
+            </div>
+          </div>
+          <div class="spanel" id="stab-about">
+            <div class="ssec">
+              <div class="ssect">StreamVault</div>
+              <p style="font-size:13px;color:var(--tx1);line-height:1.7">StreamVault fetches live M3U playlists directly from public FAST provider APIs: i.mjh.nz (Pluto/Plex/Samsung/Stirr/PBS), BuddyChewChew's generators (Tubi/Roku/Xumo), and apsattv.com (LG/Vizio/DistroTV/LocalNow/TCL+/Tablo/Xiaomi/FireTV/Whale TV+). All streams are free, ad-supported, and publicly available. All requests are proxied through killcors.com to handle cross-origin restrictions.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+  <div class="sbar">
+    <span id="sbarTxt">Ready</span>
+    <span style="color:var(--bg4)">|</span>
+    <div class="sbar-np" id="sbarNP">▶ <span id="sbarCh"></span></div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<!-- ═══ FLOATING PiP PLAYER ═══ -->
+<div id="pip" style="display:none">
+  <div id="pipDrag" title="Drag to move">
+    <div id="pipLogoWrap"></div>
+    <div id="pipInfo">
+      <div id="pipName"></div>
+      <div id="pipSub"></div>
+    </div>
+    <div id="pipBadge">● LIVE</div>
+  </div>
+  <div id="pipVidWrap">
+    <div id="pipSpin"><div class="ring"></div><span id="pipSpinTxt">Connecting…</span></div>
+    <video id="vid" controls playsinline></video>
+  </div>
+  <div id="pipBar">
+    <button class="pipBtn" id="pipFavBtn" onclick="toggleFav()" title="Favorite">☆</button>
+    <button class="pipBtn" onclick="pipFullscreen()" title="Fullscreen">⛶</button>
+    <button class="pipBtn" onclick="pipNativePiP()" title="Browser Picture-in-Picture" id="pipNativeBtn">⧉</button>
+    <button class="pipBtn pipClose" onclick="closePip()" title="Close">✕</button>
+  </div>
+</div>
+
+<!-- ═══ FULLSCREEN OVERLAY ═══ -->
+<div id="fsOverlay" style="display:none">
+  <video id="fsVid" controls playsinline></video>
+  <div id="fsChrome">
+    <div id="fsChromeLeft">
+      <div id="fsLogo"></div>
+      <div>
+        <div id="fsName"></div>
+        <div id="fsSub"></div>
+      </div>
+      <div id="fsBadge">● LIVE</div>
+    </div>
+    <div id="fsChromeRight">
+      <button class="fsBtn" id="fsFavBtn" onclick="toggleFav()">☆ Favorite</button>
+      <button class="fsBtn" onclick="exitFullscreen()">✕ Exit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// PROVIDER DEFINITIONS — all real public M3U URLs
+// ═══════════════════════════════════════════
+const PROVIDERS = [
+  { key:'plutotv',   name:'Pluto TV',        icon:'🪐', color:'#2196f3', approx:'~400',
+    url:'https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/refs/heads/main/playlists/plutotv_us.m3u' },
+  { key:'plex',      name:'Plex',            icon:'🟠', color:'#e5a00d', approx:'~650',
+    url:'https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/refs/heads/main/playlists/plex_us.m3u' },
+  { key:'samsung',   name:'Samsung TV+',     icon:'🔵', color:'#1428a0', approx:'~420',
+    url:'https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/refs/heads/main/playlists/samsungtvplus_us.m3u' },
+  { key:'tubi',      name:'Tubi',            icon:'🔴', color:'#fa2626', approx:'~200',
+    url:'https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/refs/heads/main/playlists/tubi_all.m3u' },
+  { key:'roku',      name:'Roku Channel',    icon:'🟣', color:'#662d91', approx:'~350',
+    url:'https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/refs/heads/main/playlists/roku_all.m3u' },
+  { key:'lg',        name:'LG Channels',     icon:'❤️', color:'#cc0000', approx:'~1000+',
+    url:'https://www.apsattv.com/lg.m3u' },
+  { key:'vizio',     name:'Vizio WatchFree+',icon:'📺', color:'#8b5cf6', approx:'~300',
+    url:'https://www.apsattv.com/vizio.m3u' },
+  { key:'xumo',      name:'Xumo',            icon:'⚡', color:'#7c3aed', approx:'~350',
+    url:'https://raw.githubusercontent.com/BuddyChewChew/xumo-playlist-generator/refs/heads/main/playlists/xumo_playlist.m3u' },
+  { key:'distrotv',  name:'DistroTV',        icon:'📻', color:'#0ea5e9', approx:'~250',
+    url:'https://www.apsattv.com/distro.m3u' },
+  { key:'localnow',  name:'Local Now',       icon:'📍', color:'#ef4444', approx:'~400',
+    url:'https://www.apsattv.com/localnow.m3u' },
+  { key:'tclplus',   name:'TCL TV Plus',     icon:'📡', color:'#06b6d4', approx:'~400',
+    url:'https://www.apsattv.com/tclplus.m3u' },
+  { key:'stirr',     name:'Stirr',           icon:'🌀', color:'#f97316', approx:'~140',
+    url:'https://i.mjh.nz/Stirr/all.m3u8' },
+  { key:'pbs',       name:'PBS',             icon:'🎓', color:'#1d4ed8', approx:'~50',
+    url:'https://i.mjh.nz/PBS/all.m3u8' },
+  { key:'tablo',     name:'Tablo',           icon:'📶', color:'#16a34a', approx:'~100',
+    url:'https://www.apsattv.com/tablo.m3u' },
+  { key:'xiaomi',    name:'Xiaomi TV+',      icon:'🟠', color:'#ff6900', approx:'~250',
+    url:'https://www.apsattv.com/xiaomi.m3u' },
+  { key:'firetv',    name:'Fire TV',         icon:'🔥', color:'#ff9900', approx:'~65',
+    url:'https://www.apsattv.com/firetv.m3u' },
+  { key:'freetv',    name:'Free-TV (GitHub)',icon:'🐙', color:'#6e40c9', approx:'~500',
+    url:'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8' },
+];
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let cfg = JSON.parse(localStorage.getItem('sv_cfg2') || '{}');
+cfg.proxy = cfg.proxy || 'https://proxy.killcors.com?url=';
+cfg.autoplay = cfg.autoplay !== false;
+
+let allCh = [], filtered = [], curChan = null, prevPage = 'home';
+let curView = 'grid', curProv = 'all', curGrp = 'all', srchQ = '', curSort = 'name';
+let favs = JSON.parse(localStorage.getItem('sv_favs2') || '[]');
+let pStatus = {}; // key -> {s:'ld'|'ok'|'er', n:0}
+
+// ═══════════════════════════════════════════
+// URL UTILITIES — single source of truth
+// ═══════════════════════════════════════════
+
+// The proxy prefix we prepend to every outbound request
+function getProxy() {
+  return (cfg.proxy || 'https://proxy.killcors.com?url=').trim();
+}
+
+// Strip the proxy prefix from a URL if it has one, returning the raw target
+function unproxy(url) {
+  if (!url) return '';
+  const px = getProxy();
+  if (url.startsWith(px)) {
+    try { return decodeURIComponent(url.slice(px.length)); } catch(e) { return url.slice(px.length); }
+  }
+  return url;
+}
+
+// Params that are tracking/ad junk and don't affect stream delivery.
+// Removing them dramatically shortens Pluto TV URLs.
+const JUNK_PARAMS = new Set([
+  'advertisingId','adid','deviceDNT','deviceId','deviceMake','deviceModel',
+  'deviceType','deviceVersion','appVersion','appName','buildVersion',
+  'appStoreUrl','architecture','clientTime','includeExtendedEvents',
+  'marketingRegion','serverSideAds','userId','sid','terminate',
+  'us_privacy','gdpr','gdpr_consent','coppa','sessionId','sessionid',
+]);
+
+// Trim known junk query params from a URL to reduce its length.
+// Only strips params that are provably not part of stream auth.
+function trimUrl(url) {
+  if (!url) return url;
+  try {
+    const u = new URL(url);
+    // Only trim if the URL is long enough to risk a 414
+    if (url.length < 1500) return url;
+    let changed = false;
+    for (const k of [...u.searchParams.keys()]) {
+      if (JUNK_PARAMS.has(k)) { u.searchParams.delete(k); changed = true; }
+    }
+    return changed ? u.toString() : url;
+  } catch(e) { return url; }
+}
+
+// Resolve a raw URL (possibly relative) against a known absolute base.
+function resolveUrl(raw, base) {
+  if (!raw) return '';
+  const clean = unproxy(raw.trim());
+  if (!clean) return '';
+  if (clean.match(/^https?:\/\//i)) return clean;
+  if (clean.startsWith('//')) return 'https:' + clean;
+  if (!base) return '';
+  try { return new URL(clean, base).href; } catch(e) { return ''; }
+}
+
+// Wrap a clean absolute URL in the proxy, trimming junk params first
+function toProxied(url) {
+  if (!url || !url.match(/^https?:\/\//i)) return '';
+  return getProxy() + encodeURIComponent(trimUrl(url));
+}
+
+// ═══════════════════════════════════════════
+// M3U PARSER
+// sourceUrl = the ORIGINAL (un-proxied) URL of the playlist file.
+// We use it only for resolving relative stream URLs.
+// ═══════════════════════════════════════════
+function parseM3U(text, key, sourceUrl) {
+  const out = [];
+  let meta = null;
+  // Base = directory of the source playlist (un-proxied)
+  const base = sourceUrl ? sourceUrl.substring(0, sourceUrl.lastIndexOf('/') + 1) : '';
+
+  for (const raw of text.split('\n')) {
+    const line = raw.trim();
+    if (!line) continue;
+
+    if (line.startsWith('#EXTINF')) {
+      meta = { provider: key };
+      const nm = line.match(/,(.+)$/);
+      meta.name = nm ? nm[1].trim() : 'Unknown';
+      const lg = line.match(/tvg-logo="([^"]+)"/);
+      if (lg) meta.logo = lg[1];
+      const gr = line.match(/group-title="([^"]+)"/);
+      meta.group = gr ? gr[1] : 'General';
+      const id = line.match(/tvg-id="([^"]+)"/);
+      meta.id = id ? id[1] : null;
+
+    } else if (!line.startsWith('#') && meta) {
+      // Resolve the stream URL to an absolute form
+      const url = resolveUrl(line, base);
+      if (!url) { meta = null; continue; }   // unparseable — skip
+      meta.url  = url;
+      meta.id   = meta.id || (key + '_' + out.length);
+      out.push(meta);
+      meta = null;
+    }
+  }
+  return out;
+}
+
+// ═══════════════════════════════════════════
+// HLS PROXY LOADER
+//
+// Root cause: HLS.js resolves relative segment/playlist URLs by
+// calling new URL(relative, lastFetchedUrl). Since we fetch via
+// proxy, lastFetchedUrl = "https://proxy?url=ENCODED_REAL_URL",
+// so relative resolution produces garbage.
+//
+// The ONLY reliable fix: rewrite the manifest text itself —
+// replace every relative URL with its absolute real form BEFORE
+// HLS.js parses it. Then HLS.js never needs to resolve anything;
+// every URL it sees is already absolute. We still proxy each one
+// in load(), but there is nothing relative left for HLS.js to mangle.
+// ═══════════════════════════════════════════
+function makeProxyLoader(channelUrl) {
+  const DefaultLoader = Hls.DefaultConfig.loader;
+  const proxy = getProxy();
+
+  // Track the real (un-proxied) base directory as we descend manifests
+  const state = {
+    base: channelUrl.substring(0, channelUrl.lastIndexOf('/') + 1)
+  };
+
+  // Strip all proxy layers, returning the raw target URL
+  function strip(url) {
+    if (!url) return '';
+    let u = String(url);
+    for (let i = 0; i < 8; i++) {
+      if (!u.startsWith(proxy)) break;
+      try { u = decodeURIComponent(u.slice(proxy.length)); }
+      catch(e) { u = u.slice(proxy.length); }
+    }
+    return u;
+  }
+
+  // Resolve a URL (possibly relative/proxied) to an absolute real URL
+  function toAbs(url, base) {
+    const u = strip(url);
+    if (!u) return '';
+    if (u.match(/^https?:\/\//i)) return u;
+    if (u.startsWith('//')) return 'https:' + u;
+    try { return new URL(u, base || state.base).href; }
+    catch(e) { return ''; }
+  }
+
+  // Rewrite every URL in an HLS manifest to be absolute.
+  // Called with the REAL (un-proxied) URL of the manifest so
+  // relative paths resolve correctly.
+  function rewriteManifest(text, realManifestUrl) {
+    const base = realManifestUrl.substring(0, realManifestUrl.lastIndexOf('/') + 1);
+    return text.split('\n').map(line => {
+      const t = line.trim();
+      if (!t) return line;
+      if (t.startsWith('#')) {
+        // Rewrite URI="..." attributes inside EXT tags
+        return t.replace(/URI="([^"]+)"/g, (_, uri) => {
+          const a = toAbs(uri, base);
+          return `URI="${trimUrl(a || uri)}"`;
+        });
+      } else {
+        // Plain URL line
+        if (t.match(/^https?:\/\//i)) return trimUrl(t);
+        const a = toAbs(t, base);
+        return trimUrl(a) || t;
+      }
+    }).join('\n');
+  }
+
+  return class ProxyLoader extends DefaultLoader {
+    load(context, config, callbacks) {
+      // Resolve the URL HLS.js gave us to an absolute real URL
+      const realUrl = toAbs(context.url);
+      if (!realUrl) { super.load(context, config, callbacks); return; }
+
+      // Advance the shared base
+      state.base = realUrl.substring(0, realUrl.lastIndexOf('/') + 1);
+
+      // Send the proxied URL over the wire — trim junk params first
+      context.url = proxy + encodeURIComponent(trimUrl(realUrl));
+
+      // Intercept the success callback to rewrite manifests before HLS.js parses them
+      const origSuccess = callbacks.onSuccess;
+      callbacks.onSuccess = (response, stats, ctx, networkDetails) => {
+        if (typeof response.data === 'string' &&
+            (response.data.includes('#EXTM3U') || response.data.includes('#EXT-X-'))) {
+          // Pre-resolve all relative URLs in the manifest
+          response.data = rewriteManifest(response.data, realUrl);
+        }
+        // Restore the real URL so HLS.js doesn't use the proxy URL as a base
+        ctx.url = realUrl;
+        if (origSuccess) origSuccess(response, stats, ctx, networkDetails);
+      };
+
+      super.load(context, config, callbacks);
+    }
+  };
+}
+
+// ═══════════════════════════════════════════
+// LOAD PIPELINE
+// ═══════════════════════════════════════════
+async function fetchProv(p) {
+  setPStat(p.key, 'ld');
+  try {
+    const fetchUrl = cfg.proxy + encodeURIComponent(p.url);
+    const r = await fetch(fetchUrl, { signal: AbortSignal.timeout(35000) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const txt = await r.text();
+    if (!txt.includes('#EXTINF')) throw new Error('Not M3U');
+    const chs = parseM3U(txt, p.key, p.url);
+    if (!chs.length) throw new Error('0 channels');
+    setPStat(p.key, 'ok', chs.length);
+    return chs;
+  } catch(e) {
+    console.warn(p.key, e.message);
+    setPStat(p.key, 'er', 0);
+    return [];
+  }
+}
+
+function setPStat(key, s, n=0) {
+  pStatus[key] = { s, n };
+  const el = document.getElementById('lp_' + key);
+  if (el) {
+    el.className = 'lp ' + s;
+    const info = PROVIDERS.find(x=>x.key===key);
+    el.textContent = info?.name + (s==='ok' ? ' ✓' : s==='er' ? ' ✗' : '');
+  }
+}
+
+async function loadAll() {
+  const lprovs = document.getElementById('lprovs');
+  lprovs.innerHTML = PROVIDERS.map(p => `<div class="lp" id="lp_${p.key}">${p.name}</div>`).join('');
+  document.getElementById('lstat').textContent = `Fetching ${PROVIDERS.length} providers simultaneously…`;
+
+  let done = 0;
+  await Promise.allSettled(PROVIDERS.map(async p => {
+    const chs = await fetchProv(p);
+    allCh.push(...chs);
+    dedup();
+    done++;
+    document.getElementById('lpb').style.width = Math.round(done/PROVIDERS.length*100)+'%';
+    document.getElementById('lstat').textContent =
+      `${done}/${PROVIDERS.length} providers · ${allCh.length.toLocaleString()} channels so far`;
+    updateStats();
+  }));
+
+  document.getElementById('lpb').style.width = '100%';
+  const okCount = PROVIDERS.filter(p=>pStatus[p.key]?.s==='ok').length;
+  document.getElementById('lstat').textContent =
+    `✓ ${allCh.length.toLocaleString()} channels from ${okCount} providers`;
+  await sleep(700);
+  document.getElementById('loadOv').style.display = 'none';
+  afterLoad();
+}
+
+function dedup() {
+  const seen = new Set();
+  allCh = allCh.filter(ch => {
+    const k = ch.name.toLowerCase().trim() + '|' + (ch.url||'').trim();
+    if (seen.has(k)) return false;
+    seen.add(k); return true;
+  });
+}
+
+function afterLoad() {
+  filtered = [...allCh];
+  updateStats();
+  renderHome();
+  renderProviders();
+  setupScrollObserver();
+  document.getElementById('hbadgeTxt').textContent = allCh.length.toLocaleString() + ' channels';
+  document.getElementById('sbarTxt').textContent = allCh.length.toLocaleString() + ' channels loaded';
+}
+
+async function fullRefresh() {
+  allCh = []; filtered = []; pStatus = {};
+  document.getElementById('hbadgeTxt').textContent = 'Refreshing…';
+  document.getElementById('lpb').style.width = '0%';
+  document.getElementById('loadOv').style.display = 'flex';
+  await loadAll();
+  toast('All providers refreshed', 's');
+}
+
+function updateStats() {
+  document.getElementById('sTotal').textContent = allCh.length.toLocaleString();
+  document.getElementById('sSrc').textContent = PROVIDERS.filter(p=>pStatus[p.key]?.s==='ok').length;
+  document.getElementById('sGrp').textContent = new Set(allCh.map(c=>c.group)).size;
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+const PAGE_TITLES = {home:'Home',live:'Live TV',favorites:'Favorites',providers:'All Providers',settings:'Settings'};
+
+function navTo(page, back) {
+  if (!back) prevPage = page;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.ni[data-p]').forEach(n=>n.classList.remove('on'));
+  const pg = document.getElementById('page-'+page);
+  if (!pg) return;
+  pg.classList.add('on');
+  const ni = document.querySelector(`.ni[data-p="${page}"]`);
+  if(ni) ni.classList.add('on');
+  document.getElementById('htitle').textContent = PAGE_TITLES[page]||page;
+  if(page==='home') renderHome();
+  if(page==='live') renderLive();
+  if(page==='favorites') renderFavs();
+  if(page==='providers') renderProviders();
+  if(page==='settings') renderSettings();
+}
+function goBack(){navTo(prevPage,true)}
+document.querySelectorAll('.ni[data-p]').forEach(el=>el.addEventListener('click',()=>navTo(el.dataset.p)));
+
+// ═══════════════════════════════════════════
+// HOME
+// ═══════════════════════════════════════════
+function renderHome(){
+  updateStats();
+  const feat=allCh.slice(0,24);
+  idxMap=[];
+  document.getElementById('featGrid').innerHTML=feat.length?feat.map(cardHTML).join(''):'<div class="empty"><div class="ei">⏳</div><div class="et">Loading channels…</div></div>';
+}
+
+// ═══════════════════════════════════════════
+// LIVE TV — virtual infinite scroll
+// Only PAGE_SIZE items rendered at once; more appended on scroll.
+// ═══════════════════════════════════════════
+const PAGE_SIZE = 60; // cards per page
+let vPage = 0;        // how many pages rendered so far
+let vLoading = false; // guard against double-load
+
+function renderLive(){
+  applyFilters();
+  renderProvFilts();
+  renderGrpChips();
+  resetVirtual();
+}
+
+function applyFilters(){
+  filtered=allCh.filter(ch=>{
+    if(curProv!=='all'&&ch.provider!==curProv)return false;
+    if(curGrp!=='all'&&ch.group!==curGrp)return false;
+    if(srchQ&&!ch.name.toLowerCase().includes(srchQ.toLowerCase()))return false;
+    return true;
+  });
+  filtered.sort((a,b)=>{
+    if(curSort==='name')return a.name.localeCompare(b.name);
+    if(curSort==='provider')return(a.provider||'').localeCompare(b.provider||'');
+    if(curSort==='group')return(a.group||'').localeCompare(b.group||'');
+    return 0;
+  });
+  document.getElementById('tcnt').textContent=filtered.length.toLocaleString()+' channels';
+}
+
+function renderProvFilts(){
+  const provs=['all',...new Set(allCh.map(c=>c.provider))].filter(Boolean);
+  document.getElementById('provFilts').innerHTML=provs.map(p=>{
+    const info=PROVIDERS.find(i=>i.key===p);
+    const lbl=p==='all'?'All Providers':(info?.name||p);
+    return`<div class="ppill ${p===curProv?'on':''}" onclick="setProv('${p}')">${lbl}</div>`;
+  }).join('');
+}
+
+function renderGrpChips(){
+  const grps=['all',...new Set(filtered.map(c=>c.group))].filter(Boolean).sort();
+  document.getElementById('grpChips').innerHTML=grps.map(g=>{
+    return`<div class="gc ${g===curGrp?'on':''}" onclick="setGrp('${g}')">${g==='all'?'All categories':g}</div>`;
+  }).join('');
+}
+
+// Reset virtual list and render first page
+function resetVirtual(){
+  vPage = 0;
+  idxMap = [];
+  const grid = document.getElementById('chGrid');
+  const list = document.getElementById('chList');
+
+  if(!filtered.length){
+    const e=`<div class="empty"><div class="ei">📭</div><div class="et">No channels found</div></div>`;
+    grid.innerHTML=e; list.innerHTML=e; return;
+  }
+
+  // Wipe and render first page only
+  grid.innerHTML='';
+  list.innerHTML='';
+  appendVirtualPage();
+
+  // Scroll sentinel — sits at the bottom of #chCont
+  let sentinel = document.getElementById('vSentinel');
+  if(!sentinel){
+    sentinel = document.createElement('div');
+    sentinel.id = 'vSentinel';
+    sentinel.style.cssText = 'height:1px;flex-shrink:0';
+    document.getElementById('chCont').appendChild(sentinel);
+  }
+
+  // Re-observe so IntersectionObserver picks up new content
+  setupScrollObserver();
+}
+
+function appendVirtualPage(){
+  if(vLoading) return;
+  const start = vPage * PAGE_SIZE;
+  if(start >= filtered.length) return; // nothing left
+  vLoading = true;
+
+  const slice = filtered.slice(start, start + PAGE_SIZE);
+  const prevLen = idxMap.length;
+
+  // Build HTML for this slice
+  const gridFrag = slice.map(cardHTML).join('');
+  const listFrag = slice.map(rowHTML).join('');
+
+  document.getElementById('chGrid').insertAdjacentHTML('beforeend', gridFrag);
+  document.getElementById('chList').insertAdjacentHTML('beforeend', listFrag);
+
+  vPage++;
+  vLoading = false;
+}
+
+// Intersection Observer watches the sentinel div
+let vObserver = null;
+function setupScrollObserver(){
+  if(vObserver) vObserver.disconnect();
+  vObserver = new IntersectionObserver(entries => {
+    if(entries[0].isIntersecting) appendVirtualPage();
+  }, { root: document.getElementById('content'), threshold: 0.1 });
+  const sentinel = document.getElementById('vSentinel');
+  if(sentinel) vObserver.observe(sentinel);
+}
+
+// Wire up observer once content area exists — called from afterLoad
+
+function renderChs(){
+  // kept for back-compat calls — delegate to virtual reset
+  resetVirtual();
+}
+
+// ═══════════════════════════════════════════
+// CARD / ROW
+// IDs from M3U files contain quotes, slashes, ampersands, etc.
+// NEVER embed them directly in onclick="..." attributes.
+// Instead we store a render-time index map and look up by data-idx.
+// ═══════════════════════════════════════════
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+// Map from render-index -> channel object, rebuilt each render
+let idxMap = [];
+
+function chIdx(ch){
+  const i = idxMap.length;
+  idxMap.push(ch);
+  return i;
+}
+
+// Proxy a logo URL through the same helper used for streams
+function logoSrc(url) {
+  return toProxied(url) || '';
+}
+
+// Pick a stable accent color from the provider or channel name
+const COLORS = ['#7c6dfa','#f06daa','#6df0c8','#f0a06d','#6db8f0','#c86df0','#f0e06d','#6df09a'];
+function accentFor(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) & 0xffffffff;
+  return COLORS[Math.abs(h) % COLORS.length];
+}
+
+// Inline SVG placeholder — shows channel initial with a colored background,
+// no HTTP request at all so it never flickers or fails
+function placeholderSVG(ch) {
+  const letter = (ch.name.charAt(0) || '?').toUpperCase();
+  const col = accentFor(ch.name);
+  // dark bg variant of the accent
+  const bg = col + '22';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">
+    <rect width="44" height="44" rx="7" fill="${bg}"/>
+    <text x="22" y="29" text-anchor="middle" font-size="20" font-weight="700" font-family="Syne,sans-serif" fill="${col}">${letter}</text>
+  </svg>`;
+}
+
+function placeholderSVGSmall(ch) {
+  const letter = (ch.name.charAt(0) || '?').toUpperCase();
+  const col = accentFor(ch.name);
+  const bg = col + '22';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 34 34">
+    <rect width="34" height="34" rx="6" fill="${bg}"/>
+    <text x="17" y="23" text-anchor="middle" font-size="16" font-weight="700" font-family="Syne,sans-serif" fill="${col}">${letter}</text>
+  </svg>`;
+}
+
+// Logo for grid cards (44px)
+function logoImg(ch) {
+  if (ch.logo) {
+    const src = esc(logoSrc(ch.logo));
+    const fb = esc(placeholderSVG(ch).replace(/"/g,"'"));
+    return `<img src="${src}" loading="lazy" decoding="async"
+      onerror="this.outerHTML=decodeURIComponent('${encodeURIComponent(placeholderSVG(ch))}')"
+      style="width:100%;height:100%;object-fit:contain;padding:3px">`;
+  }
+  return placeholderSVG(ch);
+}
+
+// Logo for list rows (34px)
+function logoImgSm(ch) {
+  if (ch.logo) {
+    const src = esc(logoSrc(ch.logo));
+    return `<img src="${src}" loading="lazy" decoding="async"
+      onerror="this.outerHTML=decodeURIComponent('${encodeURIComponent(placeholderSVGSmall(ch))}')"
+      style="width:100%;height:100%;object-fit:contain;padding:2px">`;
+  }
+  return placeholderSVGSmall(ch);
+}
+
+function cardHTML(ch){
+  const info=PROVIDERS.find(i=>i.key===ch.provider);
+  const col=info?.color||'#7c6dfa';
+  const now=curChan?.id===ch.id;
+  const idx=chIdx(ch);
+  return`<div class="ccard ${now?'now':''}" data-idx="${idx}">
+    <div class="ctag" style="background:${col}22;color:${col}">${esc(ch.provider||'?')}</div>
+    <div style="display:flex;gap:9px;align-items:flex-start">
+      <div class="clogo">${logoImg(ch)}</div>
+      <div style="flex:1;min-width:0"><div class="cname">${esc(ch.name)}</div><div class="cgrp">${esc(ch.group||'')}</div></div>
+    </div>
+    <div class="nowdot"></div>
+  </div>`;
+}
+
+function rowHTML(ch){
+  const info=PROVIDERS.find(i=>i.key===ch.provider);
+  const col=info?.color||'#7c6dfa';
+  const now=curChan?.id===ch.id;
+  const idx=chIdx(ch);
+  return`<div class="crow ${now?'now':''}" data-idx="${idx}">
+    <div class="crlogo">${logoImgSm(ch)}</div>
+    <div class="crname">${esc(ch.name)}</div>
+    <div class="crgrp">${esc(ch.group||'')}</div>
+    <div class="crprov" style="background:${col}22;color:${col}">${esc(ch.provider||'?')}</div>
+  </div>`;
+}
+
+// Single delegated click listener — no inline onclick needed
+document.addEventListener('click', e => {
+  const card = e.target.closest('[data-idx]');
+  if (!card) return;
+  const idx = parseInt(card.dataset.idx, 10);
+  const ch = idxMap[idx];
+  if (ch) playCh(ch);
+});
+
+// ═══════════════════════════════════════════
+// PLAYBACK — floating PiP + fullscreen
+// ═══════════════════════════════════════════
+let hlsInst = null;
+let fsHlsInst = null;  // separate HLS instance for fullscreen video element
+
+function playCh(ch){
+  if(!ch) return;
+  curChan = ch;
+
+  // Update status bar
+  document.getElementById('sbarNP').style.display = 'flex';
+  document.getElementById('sbarCh').textContent = ch.name;
+
+  // Populate PiP header
+  const info = PROVIDERS.find(i=>i.key===ch.provider);
+  document.getElementById('pipName').textContent = ch.name;
+  document.getElementById('pipSub').textContent = (info?.name||ch.provider||'') + (ch.group ? ' · ' + ch.group : '');
+  document.getElementById('pipFavBtn').textContent = favs.includes(ch.id) ? '★' : '☆';
+
+  // Logo in PiP header
+  const lw = document.getElementById('pipLogoWrap');
+  lw.innerHTML = ch.logo
+    ? `<img src="${esc(logoSrc(ch.logo))}" onerror="this.outerHTML=decodeURIComponent('${encodeURIComponent(placeholderSVGSmall(ch))}')">`
+    : placeholderSVGSmall(ch);
+
+  // Show PiP
+  const pip = document.getElementById('pip');
+  pip.style.display = 'flex';
+
+  // Start stream in PiP video element
+  startStream(ch, document.getElementById('vid'), document.getElementById('pipSpin'), document.getElementById('pipSpinTxt'), false);
+}
+
+function startStream(ch, vid, spin, spinTxt, isFs){
+  // Destroy whichever HLS instance owns this video
+  if(!isFs){ if(hlsInst){hlsInst.destroy();hlsInst=null;} }
+  else      { if(fsHlsInst){fsHlsInst.destroy();fsHlsInst=null;} }
+
+  vid.style.display = 'none';
+  spin.style.display = 'flex';
+
+  if(!ch.url){ spinTxt.textContent='No stream URL'; return; }
+  if(!ch.url.match(/^https?:\/\//i)){ spinTxt.textContent='Invalid URL'; return; }
+
+  spinTxt.textContent = 'Connecting…';
+
+  if(Hls.isSupported()){
+    const inst = new Hls({
+      maxBufferLength: +(document.getElementById('bufLen')?.value||30),
+      loader: makeProxyLoader(ch.url),
+      // Tell HLS.js the real base URL for the manifest,
+      // not the proxied one — prevents internal relative resolution bugs
+      manifestLoadingTimeOut: 20000,
+      xhrSetup: function(xhr, url) {
+        // nothing extra needed — loader handles all proxying
+      },
+    });
+    if(!isFs) hlsInst = inst; else fsHlsInst = inst;
+    inst.loadSource(ch.url);
+    inst.attachMedia(vid);
+    inst.on(Hls.Events.MANIFEST_PARSED, ()=>{
+      spin.style.display = 'none';
+      vid.style.display = 'block';
+      if(cfg.autoplay) vid.play().catch(()=>{});
+    });
+    inst.on(Hls.Events.ERROR, (e,d)=>{
+      if(d.fatal){ spinTxt.textContent='Stream error'; tryNative(ch,vid,spin,spinTxt); }
+    });
+  } else if(vid.canPlayType('application/vnd.apple.mpegurl')){
+    tryNative(ch, vid, spin, spinTxt);
+  } else {
+    spinTxt.textContent = 'HLS not supported';
+  }
+}
+
+function tryNative(ch, vid, spin, spinTxt){
+  vid.src = toProxied(ch.url);
+  vid.style.display = 'block';
+  spin.style.display = 'none';
+  vid.play().catch(()=>{
+    spin.style.display = 'flex';
+    vid.style.display = 'none';
+    spinTxt.textContent = 'Stream unavailable';
+  });
+}
+
+// ── FULLSCREEN OVERLAY ──
+function pipFullscreen(){
+  if(!curChan) return;
+  const ov = document.getElementById('fsOverlay');
+  const fsVid = document.getElementById('fsVid');
+  const fsSpin = document.createElement('div');  // not shown — handled by HLS events
+
+  // Populate FS chrome
+  document.getElementById('fsName').textContent = curChan.name;
+  const info = PROVIDERS.find(i=>i.key===curChan.provider);
+  document.getElementById('fsSub').textContent = (info?.name||curChan.provider||'') + (curChan.group ? ' · ' + curChan.group : '');
+  document.getElementById('fsFavBtn').textContent = favs.includes(curChan.id) ? '★ Favorited' : '☆ Favorite';
+  const fl = document.getElementById('fsLogo');
+  fl.innerHTML = curChan.logo
+    ? `<img src="${esc(logoSrc(curChan.logo))}" onerror="this.outerHTML=decodeURIComponent('${encodeURIComponent(placeholderSVG(curChan))}')">`
+    : placeholderSVG(curChan);
+
+  ov.style.display = 'flex';
+
+  // Spin the fs video — reuse the pip stream time if already loaded, else restart
+  const pipVid = document.getElementById('vid');
+  if(pipVid.readyState >= 2 && !pipVid.paused){
+    // Clone the current playback position into fsVid via same proxied src
+    startStream(curChan, fsVid, {style:{display:'none'}}, {textContent:''}, true);
+  } else {
+    startStream(curChan, fsVid, {style:{display:'none'}}, {textContent:''}, true);
+  }
+
+  // Try native browser fullscreen on the overlay
+  ov.requestFullscreen?.().catch(()=>{});
+
+  // ESC key exits
+  document.addEventListener('keydown', onFsKey);
+}
+
+function onFsKey(e){ if(e.key==='Escape') exitFullscreen(); }
+
+function exitFullscreen(){
+  if(fsHlsInst){ fsHlsInst.destroy(); fsHlsInst=null; }
+  const fsVid = document.getElementById('fsVid');
+  fsVid.pause(); fsVid.src='';
+  document.getElementById('fsOverlay').style.display = 'none';
+  document.removeEventListener('keydown', onFsKey);
+  if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+}
+
+// ── NATIVE BROWSER PiP (if supported) ──
+async function pipNativePiP(){
+  const vid = document.getElementById('vid');
+  if(!document.pictureInPictureEnabled){ toast('Browser PiP not supported','e'); return; }
+  try {
+    if(document.pictureInPictureElement){
+      await document.exitPictureInPicture();
+    } else {
+      await vid.requestPictureInPicture();
+    }
+  } catch(e){ toast('PiP failed: '+e.message,'e'); }
+}
+
+// Hide native PiP button if browser doesn't support it
+document.addEventListener('DOMContentLoaded', ()=>{
+  if(!document.pictureInPictureEnabled){
+    const btn = document.getElementById('pipNativeBtn');
+    if(btn) btn.style.display = 'none';
+  }
+});
+
+function closePip(){
+  if(hlsInst){ hlsInst.destroy(); hlsInst=null; }
+  const vid = document.getElementById('vid');
+  vid.pause(); vid.src='';
+  document.getElementById('pip').style.display = 'none';
+  document.getElementById('sbarNP').style.display = 'none';
+  curChan = null;
+}
+
+// ── DRAGGABLE PiP ──
+(function(){
+  let dragging=false, ox=0, oy=0, startX=0, startY=0;
+  const handle = ()=>document.getElementById('pipDrag');
+  const pip    = ()=>document.getElementById('pip');
+
+  document.addEventListener('mousedown', e=>{
+    if(!handle().contains(e.target)) return;
+    dragging=true;
+    const r = pip().getBoundingClientRect();
+    ox = e.clientX - r.left;
+    oy = e.clientY - r.top;
+    startX = e.clientX; startY = e.clientY;
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e=>{
+    if(!dragging) return;
+    const p = pip();
+    // Switch from bottom/right anchoring to top/left once user drags
+    p.style.bottom='auto'; p.style.right='auto';
+    p.style.left = (e.clientX - ox)+'px';
+    p.style.top  = (e.clientY - oy)+'px';
+  });
+  document.addEventListener('mouseup', e=>{
+    if(!dragging) return;
+    dragging=false;
+    // If barely moved, treat as a click (not a drag) — do nothing extra
+  });
+  // Touch support
+  document.addEventListener('touchstart', e=>{
+    if(!handle().contains(e.target)) return;
+    const t=e.touches[0];
+    dragging=true;
+    const r=pip().getBoundingClientRect();
+    ox=t.clientX-r.left; oy=t.clientY-r.top;
+    e.preventDefault();
+  },{passive:false});
+  document.addEventListener('touchmove', e=>{
+    if(!dragging) return;
+    const t=e.touches[0];
+    const p=pip();
+    p.style.bottom='auto'; p.style.right='auto';
+    p.style.left=(t.clientX-ox)+'px';
+    p.style.top=(t.clientY-oy)+'px';
+    e.preventDefault();
+  },{passive:false});
+  document.addEventListener('touchend', ()=>{ dragging=false; });
+})();
+
+// ═══════════════════════════════════════════
+// FILTER HANDLERS
+// ═══════════════════════════════════════════
+let srchTimer = null;
+function onSearch(v){
+  clearTimeout(srchTimer);
+  srchTimer = setTimeout(()=>{
+    srchQ=v;
+    if(!document.getElementById('page-live').classList.contains('on')) navTo('live');
+    applyFilters(); renderGrpChips(); resetVirtual();
+    // Scroll content area back to top
+    document.getElementById('content').scrollTop=0;
+  }, 220);
+}
+function setProv(k){
+  curProv=k; curGrp='all';
+  document.getElementById('content').scrollTop=0;
+  renderProvFilts(); applyFilters(); renderGrpChips(); resetVirtual();
+}
+function setGrp(g){
+  curGrp=g;
+  document.getElementById('content').scrollTop=0;
+  renderGrpChips(); applyFilters(); resetVirtual();
+}
+function doSort(v){
+  curSort=v;
+  document.getElementById('content').scrollTop=0;
+  applyFilters(); resetVirtual();
+}
+function setView(v){
+  curView=v;
+  document.getElementById('chGrid').style.display=v==='grid'?'grid':'none';
+  document.getElementById('chList').style.display=v==='list'?'flex':'none';
+  document.getElementById('vbG').classList.toggle('on',v==='grid');
+  document.getElementById('vbL').classList.toggle('on',v==='list');
+}
+
+// ═══════════════════════════════════════════
+// FAVORITES
+// ═══════════════════════════════════════════
+function toggleFav(){
+  if(!curChan) return;
+  const idx = favs.indexOf(curChan.id);
+  if(idx===-1){ favs.push(curChan.id); toast(curChan.name+' added to favorites','s'); }
+  else{ favs.splice(idx,1); toast('Removed from favorites','i'); }
+  localStorage.setItem('sv_favs2', JSON.stringify(favs));
+  const star = favs.includes(curChan.id);
+  const pf = document.getElementById('pipFavBtn');
+  if(pf) pf.textContent = star ? '★' : '☆';
+  const ff = document.getElementById('fsFavBtn');
+  if(ff) ff.textContent = star ? '★ Favorited' : '☆ Favorite';
+}
+function renderFavs(){
+  const chs=favs.map(id=>allCh.find(c=>c.id===id)).filter(Boolean);
+  idxMap=[];
+  document.getElementById('favCont').innerHTML=chs.length
+    ?`<div class="cgrid">${chs.map(cardHTML).join('')}</div>`
+    :`<div class="empty"><div class="ei">⭐</div><div class="et">No favorites yet</div></div>`;
+}
+
+// ═══════════════════════════════════════════
+// PROVIDERS PAGE
+// ═══════════════════════════════════════════
+function renderProviders(){
+  document.getElementById('pvGrid').innerHTML=PROVIDERS.map(p=>{
+    const st=pStatus[p.key];
+    const cnt=st?.n||0;
+    const stClass=!st?'pd':st.s==='ok'?'ok':st.s==='er'?'er':'ld';
+    const stLbl=!st?'pending':st.s==='ok'?'live':st.s==='er'?'failed':'loading';
+    return`<div class="pvcard" onclick="setProv('${p.key}');navTo('live')" style="border-top:3px solid ${p.color}30">
+      <div style="position:absolute;inset:0;background:${p.color}06;border-radius:var(--r);pointer-events:none"></div>
+      <div class="pvhdr">
+        <div class="pvicon" style="background:${p.color}18">${p.icon}</div>
+        <div style="flex:1;min-width:0"><div class="pvname">${p.name}</div><div class="pvkey">${p.key}</div></div>
+        <div class="pvst ${stClass}">${stLbl}</div>
+      </div>
+      <div><div class="pvsv" style="color:${p.color}">${cnt>0?cnt.toLocaleString():p.approx}</div><div class="pvsl">${cnt>0?'channels loaded':'channels est.'}</div></div>
+      <div class="pvauth">${p.url.includes('github')?'🐙 GitHub':'🌐 Public API'} · ${p.url.split('/')[2]}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════
+function renderSettings(){
+  document.getElementById('proxyInp').value=cfg.proxy;
+  document.getElementById('togAP').classList.toggle('on',cfg.autoplay!==false);
+}
+function stab(tab,el){
+  document.querySelectorAll('.sni').forEach(n=>n.classList.remove('on'));
+  document.querySelectorAll('.spanel').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('stab-'+tab).classList.add('on');
+}
+function saveCfg(){
+  cfg.proxy=document.getElementById('proxyInp')?.value||'https://proxy.killcors.com?url=';
+  localStorage.setItem('sv_cfg2',JSON.stringify(cfg));
+}
+function togCfg(k,id){cfg[k]=!cfg[k];document.getElementById(id).classList.toggle('on',!!cfg[k]);localStorage.setItem('sv_cfg2',JSON.stringify(cfg));}
+
+// ═══════════════════════════════════════════
+// TOAST / UTIL
+// ═══════════════════════════════════════════
+function toast(msg,type='i'){
+  const c=document.getElementById('toasts');
+  const icons={s:'✓',e:'✕',i:'ℹ'};
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;t.innerHTML=`<span>${icons[type]}</span>${msg}`;
+  c.appendChild(t);setTimeout(()=>t.remove(),3500);
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  renderSettings();
+  loadAll();
+});
+</script>
+</body>
+</html>
