@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>screenshot.js — Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f1f5f9; color: #1e293b; padding: 40px 24px; }
+    h1   { font-size: 28px; margin-bottom: 6px; }
+    .sub { color: #64748b; margin-bottom: 32px; font-size: 15px; }
+    .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.07); max-width: 700px; }
+    .card h2 { font-size: 16px; margin-bottom: 12px; color: #475569; }
+    code { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px;
+           padding: 2px 6px; font-size: 13px; font-family: monospace; }
+    pre  { background: #0f172a; color: #94a3b8; border-radius: 8px; padding: 16px;
+           font-size: 13px; font-family: monospace; line-height: 1.7; overflow-x: auto; margin: 10px 0; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px;
+           border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 600;
+           transition: opacity .15s; }
+    .btn:hover { opacity: .85; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-primary  { background: #6366f1; color: white; }
+    .btn-green    { background: #22c55e; color: white; }
+    .btn-orange   { background: #f97316; color: white; }
+    .controls     { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    #capture-target { border: 2px dashed #cbd5e1; border-radius: 10px; padding: 24px;
+                      background: linear-gradient(135deg,#ede9fe,#dbeafe); margin-top: 8px; }
+    #capture-target h3 { font-size: 18px; color: #4f46e5; margin-bottom: 8px; }
+    #capture-target p  { color: #475569; font-size: 14px; }
+
+    /* Hide screenshot button from its own capture */
+    .screenshot-capturing #screenshotBtn,
+    .screenshot-capturing .btn-green,
+    .screenshot-capturing .btn-orange { visibility: hidden; }
+  </style>
+</head>
+<body>
+
+  <h1>📷 screenshot.js Demo</h1>
+  <p class="sub">A drop-in JS utility that adds a screenshot-to-PNG button to any page.</p>
+
+  <!-- ── Default usage ── -->
+  <div class="card">
+    <h2>1 — Default: capture the whole page</h2>
+    <p>Just add <code>id="screenshotBtn"</code> to any button. No configuration needed.</p>
+    <pre>&lt;button id="screenshotBtn"&gt;Take Screenshot&lt;/button&gt;
+&lt;script src="screenshot.js"&gt;&lt;/script&gt;</pre>
+    <div class="controls">
+      <button id="screenshotBtn" class="btn btn-primary">📷 Take Screenshot</button>
+    </div>
+  </div>
+
+  <!-- ── Custom filename & format ── -->
+  <div class="card">
+    <h2>2 — Custom filename & JPEG format via data attributes</h2>
+    <pre>&lt;button id="screenshotBtn"
+  data-filename="my-export"
+  data-format="jpeg"
+  data-quality="0.9"&gt;Save as JPEG&lt;/button&gt;</pre>
+    <div class="controls">
+      <button id="screenshotBtn" class="btn btn-orange"
+        data-filename="my-export"
+        data-format="jpeg"
+        data-quality="0.9">💾 Save as JPEG</button>
+    </div>
+  </div>
+
+  <!-- ── Capture a specific element ── -->
+  <div class="card">
+    <h2>3 — Capture a specific element only</h2>
+    <pre>&lt;button id="screenshotBtn" data-selector="#capture-target"&gt;
+  Capture Element
+&lt;/button&gt;</pre>
+    <div id="capture-target">
+      <h3>🎯 This element only</h3>
+      <p>When you click below, only this box is captured — not the whole page.</p>
+    </div>
+    <div class="controls" style="margin-top:12px">
+      <button id="screenshotBtn" class="btn btn-green"
+        data-selector="#capture-target"
+        data-filename="element-capture">📦 Capture This Box</button>
+    </div>
+  </div>
+
+  <!-- ── Programmatic API ── -->
+  <div class="card">
+    <h2>4 — Programmatic API</h2>
+    <pre>Screenshot.capture({
+  filename: 'my-page',
+  scale: 2,           // retina quality
+  format: 'png',
+  onDone: (blob) =&gt; console.log('Done!', blob)
+});</pre>
+    <div class="controls">
+      <button class="btn btn-primary" onclick="
+        Screenshot.capture({
+          filename: 'programmatic',
+          scale: 2,
+          onDone: (blob) => console.log('Captured:', blob.size, 'bytes')
+        })">⚡ Capture via JS API</button>
+    </div>
+  </div>
+
+  <script src="screenshot.js"></script>
+</body>
+</html>
