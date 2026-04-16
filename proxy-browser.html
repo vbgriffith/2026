@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PROXON</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --cbg:#0b0d12;--cs:#141820;--cb:#1c2030;
+  --a1:#4af;--a2:#0f8;--a3:#f84;--a4:#c6f;
+  --tx:#c8cdd8;--tx2:#525d75;
+  --bar:50px;--stat:26px;
+}
+html,body{margin:0;height:100%;overflow:hidden;background:#fff;font-family:'DM Sans',sans-serif}
+
+/* ── Chrome bar ── */
+#chrome{
+  position:fixed;top:0;left:0;right:0;z-index:99999;
+  height:var(--bar);background:var(--cbg);
+  border-bottom:1px solid var(--cb);
+  display:flex;align-items:center;gap:5px;padding:0 8px;
+  font-family:'JetBrains Mono',monospace;
+}
+#chrome button{
+  background:none;border:1px solid var(--cb);color:var(--tx2);
+  width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:15px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .12s;flex-shrink:0;
+}
+#chrome button:hover{background:var(--cs);color:var(--a1);border-color:var(--a1)}
+#chrome button:active{transform:scale(.92)}
+#chrome button.dis{opacity:.25;pointer-events:none}
+#urlbox{
+  flex:1;height:32px;background:var(--cs);
+  border:1px solid var(--cb);border-radius:7px;
+  display:flex;align-items:center;padding:0 10px;gap:6px;
+  transition:border-color .2s;
+}
+#urlbox:focus-within{border-color:var(--a1)}
+.lock{font-size:11px;color:var(--a2);flex-shrink:0}
+.lock.w{color:var(--a3)}
+#url{
+  flex:1;background:none;border:none;color:var(--tx);
+  font:12px/1 'JetBrains Mono',monospace;outline:none;
+}
+#url::placeholder{color:var(--tx2)}
+#gobtn{
+  width:auto!important;padding:0 14px!important;
+  font:600 11px/1 'JetBrains Mono',monospace!important;
+  letter-spacing:.8px;
+  background:linear-gradient(135deg,#4af,#08f)!important;
+  color:#fff!important;border:none!important;
+}
+#gobtn:hover{filter:brightness(1.15)}
+#jstog{
+  width:auto!important;padding:0 9px!important;
+  font:600 9px/1 'JetBrains Mono',monospace!important;
+  letter-spacing:.4px;
+}
+#jstog.on{color:var(--a2)!important;border-color:var(--a2)!important}
+#jstog.off{color:var(--a3)!important;border-color:var(--a3)!important}
+
+/* ── Load bar ── */
+#loadbar{position:fixed;top:var(--bar);left:0;right:0;height:2px;z-index:99998;overflow:hidden}
+#loadbar .t{height:100%;width:0%;background:linear-gradient(90deg,var(--a1),var(--a2));box-shadow:0 0 10px var(--a1);transition:width .25s ease}
+
+/* ── Status bar ── */
+#status{
+  position:fixed;bottom:0;left:0;right:0;z-index:99999;
+  height:var(--stat);background:var(--cbg);
+  border-top:1px solid var(--cb);
+  display:flex;align-items:center;padding:0 10px;
+  font:11px/1 'JetBrains Mono',monospace;color:var(--tx2);gap:8px;
+}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--a2);flex-shrink:0}
+.dot.ld{background:var(--a3);animation:pls .5s infinite alternate}
+.dot.er{background:#f44}
+@keyframes pls{to{opacity:.3}}
+
+/* ── Viewport ── */
+#vp{position:fixed;top:var(--bar);left:0;right:0;bottom:var(--stat);overflow:auto;background:#fff}
+
+/* ── Welcome ── */
+#welcome{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;background:var(--cbg);color:var(--tx);
+  font-family:'JetBrains Mono',monospace;text-align:center;padding:40px 20px;
+}
+#welcome h1{
+  font-size:clamp(28px,6vw,48px);font-weight:700;
+  background:linear-gradient(135deg,#4af,#0f8,#f84);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:6px;
+}
+#welcome .sub{color:var(--tx2);font-size:12px;margin-bottom:28px}
+#sbox{
+  display:flex;width:100%;max-width:420px;margin-bottom:22px;
+  border:1px solid var(--cb);border-radius:10px;overflow:hidden;background:var(--cs);
+}
+#sinput{
+  flex:1;background:none;border:none;color:var(--tx);
+  padding:12px 14px;font:13px/1 'JetBrains Mono',monospace;outline:none;
+}
+#sinput::placeholder{color:var(--tx2)}
+#sbtn{
+  background:linear-gradient(135deg,#4af,#08f);border:none;color:#fff;
+  padding:0 18px;font:600 11px/1 'JetBrains Mono',monospace;cursor:pointer;letter-spacing:.5px;
+}
+.ql{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;max-width:480px}
+.ql a{
+  padding:7px 14px;border:1px solid var(--cb);border-radius:7px;
+  color:var(--tx);text-decoration:none;font-size:11px;cursor:pointer;transition:all .12s;
+}
+.ql a:hover{border-color:var(--a1);color:var(--a1);background:rgba(68,170,255,.06)}
+
+/* ── Page & Error ── */
+#pagebox{display:none;min-height:100%}
+#errbox{
+  display:none;padding:60px 30px;text-align:center;
+  background:var(--cbg);min-height:100%;color:var(--tx);
+  font-family:'JetBrains Mono',monospace;
+}
+#errbox h2{color:#f44;font-size:20px;margin-bottom:10px}
+#errbox p{color:var(--tx2);font-size:12px;max-width:440px;margin:0 auto;white-space:pre-wrap}
+</style>
+</head>
+<body>
+
+<!-- CHROME -->
+<div id="chrome">
+  <button id="btnB" class="dis" onclick="P.back()" title="Back">&#9664;</button>
+  <button id="btnF" class="dis" onclick="P.fwd()" title="Forward">&#9654;</button>
+  <button onclick="P.reload()" title="Reload">&#8635;</button>
+  <button onclick="P.home()" title="Home">&#8962;</button>
+  <div id="urlbox">
+    <span class="lock" id="lock">&#9679;</span>
+    <input id="url" placeholder="Enter URL or search..." onkeydown="if(event.key==='Enter')P.go(this.value)">
+  </div>
+  <button id="gobtn" onclick="P.go(document.getElementById('url').value)">GO</button>
+  <button id="jstog" class="on" onclick="P.toggleJS()" title="Toggle JavaScript">JS</button>
+</div>
+
+<div id="loadbar"><div class="t" id="lt"></div></div>
+
+<div id="status">
+  <div class="dot" id="dot"></div>
+  <span id="stxt">Ready</span>
+  <span style="margin-left:auto" id="stime"></span>
+</div>
+
+<!-- VIEWPORT -->
+<div id="vp">
+  <div id="welcome">
+    <h1>PROXON</h1>
+    <div class="sub">No-iframe proxy browser &mdash; full rendering &amp; JS execution</div>
+    <div id="sbox">
+      <input id="sinput" placeholder="Search DuckDuckGo..." onkeydown="if(event.key==='Enter')P.search(this.value)">
+      <button id="sbtn" onclick="P.search(document.getElementById('sinput').value)">SEARCH</button>
+    </div>
+    <div class="ql">
+      <a onclick="P.go('https://example.com')">example.com</a>
+      <a onclick="P.go('https://en.wikipedia.org')">Wikipedia</a>
+      <a onclick="P.go('https://news.ycombinator.com')">Hacker News</a>
+      <a onclick="P.go('https://httpbin.org')">httpbin.org</a>
+      <a onclick="P.go('https://lite.cnn.com')">CNN Lite</a>
+      <a onclick="P.go('https://text.npr.org')">NPR Text</a>
+    </div>
+  </div>
+  <div id="pagebox"></div>
+  <div id="errbox"><h2 id="eT">Error</h2><p id="eM"></p></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// PROXON — No-iframe proxy browser
+// All external requests via proxy.killcors.com
+// ═══════════════════════════════════════════════════════════
+
+const PROXY = 'https://proxy.killcors.com?url=';
+const $ = id => document.getElementById(id);
+
+// ── URL helpers ──
+function resolve(href, base) {
+  if (!href) return '';
+  if (href.startsWith('data:') || href.startsWith('blob:') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:')) return href;
+  if (href.startsWith('//')) href = 'https:' + href;
+  if (/^https?:\/\//i.test(href)) return href;
+  try { return new URL(href, base).href; } catch { return href; }
+}
+
+function px(url) {
+  if (!url || url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('javascript:') || url.startsWith(PROXY)) return url;
+  return PROXY + encodeURIComponent(url);
+}
+
+function baseOf(url) {
+  try { const u = new URL(url); return u.origin + u.pathname.substring(0, u.pathname.lastIndexOf('/') + 1); }
+  catch { return url; }
+}
+
+function originOf(url) {
+  try { return new URL(url).origin; } catch { return ''; }
+}
+
+// ══════════════════════════════════════════════════════════
+// BROWSER
+// ══════════════════════════════════════════════════════════
+const P = {
+  jsOn: true,
+  cur: '',
+  hist: [],
+  hi: -1,
+  busy: false,
+  ac: null,
+
+  go(input) {
+    if (!input?.trim()) return;
+    let u = input.trim();
+    if (!/^https?:\/\//i.test(u) && !u.includes('.')) return P.search(u);
+    if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+    P._nav(u, true);
+  },
+
+  search(q) {
+    if (!q?.trim()) return;
+    P._nav('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q.trim()), true);
+  },
+
+  back()   { if (P.hi > 0) { P.hi--; P._nav(P.hist[P.hi], false); } },
+  fwd()    { if (P.hi < P.hist.length-1) { P.hi++; P._nav(P.hist[P.hi], false); } },
+  reload() { if (P.cur) P._nav(P.cur, false); },
+
+  home() {
+    P.cur = '';
+    $('url').value = '';
+    $('welcome').style.display = 'flex';
+    $('pagebox').style.display = 'none';
+    $('pagebox').innerHTML = '';
+    $('errbox').style.display = 'none';
+    P._st('Ready','ok');
+    $('lock').className = 'lock';
+    document.title = 'PROXON';
+  },
+
+  toggleJS() {
+    P.jsOn = !P.jsOn;
+    $('jstog').className = P.jsOn ? 'on' : 'off';
+    $('jstog').title = 'JavaScript: ' + (P.jsOn ? 'ON' : 'OFF');
+  },
+
+  // ── Core navigation ──
+  async _nav(url, addH) {
+    if (P.busy && P.ac) P.ac.abort();
+    P.cur = url;
+    $('url').value = url;
+    $('welcome').style.display = 'none';
+    $('errbox').style.display = 'none';
+    $('pagebox').style.display = 'none';
+    $('pagebox').innerHTML = '';
+    $('lock').className = url.startsWith('https') ? 'lock' : 'lock w';
+
+    if (addH) {
+      P.hist = P.hist.slice(0, P.hi + 1);
+      P.hist.push(url);
+      P.hi = P.hist.length - 1;
+    }
+    P._updnav();
+    P._st('Fetching...','ld');
+    P._ld(15);
+
+    const t0 = performance.now();
+    P.busy = true;
+    P.ac = new AbortController();
+
+    try {
+      const r = await fetch(px(url), { signal: P.ac.signal });
+      P._ld(40);
+      if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + r.statusText);
+
+      const ct = (r.headers.get('content-type') || '').toLowerCase();
+      const raw = await r.text();
+      P._ld(60);
+
+      if (ct.includes('text/html') || ct === '' || raw.trimStart().startsWith('<!') || raw.trimStart().toLowerCase().startsWith('<html')) {
+        await P._renderHTML(raw, url);
+      } else if (ct.includes('json')) {
+        P._renderJSON(raw);
+      } else if (ct.includes('image/')) {
+        P._renderImg(url);
+      } else if (ct.includes('text/')) {
+        P._renderText(raw);
+      } else {
+        await P._renderHTML(raw, url);
+      }
+
+      const ms = Math.round(performance.now() - t0);
+      P._ld(100);
+      setTimeout(() => P._ld(0), 400);
+      P._st('Loaded in ' + ms + 'ms','ok');
+      $('stime').textContent = ms + 'ms';
+
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+      P._err('Failed to load', e.message + '\n\n' + url);
+      P._ld(0);
+      P._st('Error','er');
+    } finally {
+      P.busy = false;
+    }
+  },
+
+  // ══════════════════════════════════════════════════
+  // HTML RENDERER
+  // ══════════════════════════════════════════════════
+  async _renderHTML(html, pageUrl) {
+    const base = baseOf(pageUrl);
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+
+    // Title
+    const t = doc.querySelector('title');
+    if (t) document.title = 'PROXON — ' + t.textContent;
+
+    // ── Collect & fetch CSS ──
+    const cssEls = [...doc.querySelectorAll('link[rel="stylesheet"], link[type="text/css"]')];
+    const cssProm = cssEls.map(async link => {
+      const href = resolve(link.getAttribute('href'), base);
+      if (!href || href.startsWith('data:')) return '';
+      try {
+        const r = await fetch(px(href));
+        let css = await r.text();
+        return P._rwCSS(css, baseOf(href));
+      } catch { return ''; }
+    });
+    cssEls.forEach(l => l.remove());
+
+    // ── Collect scripts ──
+    const scripts = [...doc.querySelectorAll('script')];
+    const sData = [];
+    for (const sc of scripts) {
+      const src = sc.getAttribute('src');
+      if (src) {
+        sData.push({ ext: true, url: resolve(src, base), type: sc.getAttribute('type') || '' });
+      } else if (sc.textContent.trim()) {
+        sData.push({ ext: false, code: sc.textContent, type: sc.getAttribute('type') || '' });
+      }
+      sc.remove();
+    }
+
+    // ── Rewrite resources in parsed DOM ──
+    // Images & sources
+    doc.querySelectorAll('img, source, video, audio, embed, track').forEach(el => {
+      for (const a of ['src','data-src','poster','data']) {
+        const v = el.getAttribute(a);
+        if (v && !v.startsWith('data:')) el.setAttribute(a, px(resolve(v, base)));
+      }
+      const ss = el.getAttribute('srcset') || el.getAttribute('data-srcset');
+      if (ss) {
+        const rw = ss.split(',').map(p => {
+          const pp = p.trim().split(/\s+/);
+          if (pp[0]) pp[0] = px(resolve(pp[0], base));
+          return pp.join(' ');
+        }).join(', ');
+        if (el.getAttribute('srcset')) el.setAttribute('srcset', rw);
+        if (el.getAttribute('data-srcset')) el.setAttribute('data-srcset', rw);
+      }
+    });
+
+    // Objects
+    doc.querySelectorAll('object').forEach(el => {
+      const d = el.getAttribute('data');
+      if (d) el.setAttribute('data', px(resolve(d, base)));
+    });
+
+    // Links → data attributes
+    doc.querySelectorAll('a').forEach(a => {
+      const href = a.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+      a.setAttribute('data-pxhref', resolve(href, base));
+      a.removeAttribute('href');
+      a.style.cursor = 'pointer';
+      a.removeAttribute('target');
+    });
+
+    // Forms → data attributes
+    doc.querySelectorAll('form').forEach(f => {
+      const action = f.getAttribute('action') || pageUrl;
+      f.setAttribute('data-pxaction', resolve(action, base));
+      f.setAttribute('data-pxmethod', (f.getAttribute('method') || 'GET').toUpperCase());
+      f.removeAttribute('action');
+      f.removeAttribute('target');
+    });
+
+    // Inline styles with url()
+    doc.querySelectorAll('[style]').forEach(el => {
+      const s = el.getAttribute('style');
+      if (s?.includes('url(')) el.setAttribute('style', P._rwCSSUrls(s, base));
+    });
+
+    // <style> blocks
+    doc.querySelectorAll('style').forEach(el => {
+      el.textContent = P._rwCSS(el.textContent, base);
+    });
+
+    // Favicons
+    doc.querySelectorAll('link[rel*="icon"]').forEach(l => {
+      const h = l.getAttribute('href');
+      if (h) l.setAttribute('href', px(resolve(h, base)));
+    });
+
+    // Remove meta refresh
+    doc.querySelectorAll('meta[http-equiv="refresh"]').forEach(m => m.remove());
+
+    // ── Wait for CSS ──
+    P._ld(70);
+    const cssResults = await Promise.all(cssProm);
+
+    // ── Assemble final HTML ──
+    const pb = $('pagebox');
+    let out = '<style id="_pxcss">\n';
+    for (const c of cssResults) { if (c) out += c + '\n'; }
+    out += '</style>\n';
+
+    // Head content (minus stylesheets, scripts)
+    const headHTML = doc.head ? doc.head.innerHTML.replace(/<link[^>]*rel=["']?stylesheet["']?[^>]*>/gi, '') : '';
+    out += headHTML;
+    out += doc.body ? doc.body.innerHTML : doc.documentElement.innerHTML;
+
+    pb.innerHTML = out;
+    pb.style.display = 'block';
+
+    // ── Attach event handlers ──
+    pb.addEventListener('click', P._onClick, true);
+    pb.querySelectorAll('form[data-pxaction]').forEach(f => {
+      f.addEventListener('submit', P._onSubmit);
+    });
+
+    P._ld(80);
+
+    // ── Execute JS ──
+    if (P.jsOn) await P._execScripts(sData, pageUrl, base);
+
+    $('vp').scrollTop = 0;
+  },
+
+  // ── Script execution ──
+  async _execScripts(sData, pageUrl, base) {
+    P._injectShim(pageUrl, base);
+    P._ld(85);
+
+    for (const sd of sData) {
+      try {
+        let code = '';
+        if (sd.ext) {
+          const r = await fetch(px(sd.url));
+          code = await r.text();
+        } else {
+          code = sd.code;
+        }
+        if (!code.trim()) continue;
+
+        // JSON/LD data scripts
+        if (sd.type === 'application/json' || sd.type === 'application/ld+json') {
+          const s = document.createElement('script');
+          s.type = sd.type;
+          s.textContent = code;
+          $('pagebox').appendChild(s);
+          continue;
+        }
+
+        const s = document.createElement('script');
+        s.textContent = 'try{\n' + code + '\n}catch(_e){console.warn("[PX]",_e.message)}';
+        $('pagebox').appendChild(s);
+      } catch (e) {
+        console.warn('[PX] Script load fail:', sd.url || 'inline', e.message);
+      }
+    }
+    P._ld(95);
+  },
+
+  // ── Shim injection ──
+  _injectShim(pageUrl, base) {
+    const code = `(function(){
+var PX=${JSON.stringify(PROXY)},PU=${JSON.stringify(pageUrl)},BU=${JSON.stringify(base)};
+function _r(h){
+  if(!h)return'';
+  if(h.startsWith('data:')||h.startsWith('blob:')||h.startsWith('javascript:'))return h;
+  if(h.startsWith('//'))h='https:'+h;
+  if(/^https?:\\/\\//i.test(h))return h;
+  try{return new URL(h,BU).href}catch(e){return h}
+}
+function _p(u){
+  if(!u||u.startsWith('data:')||u.startsWith('blob:')||u.startsWith('javascript:')||u.startsWith(PX))return u;
+  return PX+encodeURIComponent(u);
+}
+
+// Override fetch
+var _f=window.fetch;
+window.fetch=function(i,o){
+  var u=typeof i==='string'?i:(i&&i.url?i.url:String(i));
+  if(u&&!u.startsWith(PX)&&!u.startsWith('data:')&&!u.startsWith('blob:')){
+    u=_p(_r(u));
+  }
+  if(typeof i==='string'||!(i instanceof Request))return _f.call(window,u,o);
+  return _f.call(window,new Request(u,i),o);
+};
+
+// Override XHR
+var _xo=XMLHttpRequest.prototype.open;
+XMLHttpRequest.prototype.open=function(m,u){
+  if(u&&!u.startsWith(PX)&&!u.startsWith('data:')&&!u.startsWith('blob:'))u=_p(_r(u));
+  return _xo.apply(this,[m,u].concat([].slice.call(arguments,2)));
+};
+
+// Override createElement for dynamic elements
+var _ce=document.createElement.bind(document);
+document.createElement=function(tag,opts){
+  var el=_ce(tag,opts),tl=tag.toLowerCase();
+  if(tl==='script'){
+    var _s='';
+    Object.defineProperty(el,'src',{
+      get:function(){return _s},
+      set:function(v){_s=v;el.setAttribute('src',_p(_r(v)))},
+      configurable:true
+    });
+  }
+  if(tl==='link'){
+    var _h='';
+    Object.defineProperty(el,'href',{
+      get:function(){return _h},
+      set:function(v){_h=v;el.setAttribute('href',_p(_r(v)))},
+      configurable:true
+    });
+  }
+  if(tl==='img'){
+    var _is='';
+    Object.defineProperty(el,'src',{
+      get:function(){return _is},
+      set:function(v){_is=v;el.setAttribute('src',_p(_r(v)))},
+      configurable:true
+    });
+  }
+  return el;
+};
+
+// Override window.open
+window.open=function(u){if(u&&window.P)window.P.go(_r(u));return null};
+
+// Override pushState/replaceState
+var _ps=history.pushState,_rs=history.replaceState;
+history.pushState=function(s,t,u){return _ps.call(this,s,t,null)};
+history.replaceState=function(s,t,u){return _rs.call(this,s,t,null)};
+
+// MutationObserver for dynamically added elements
+new MutationObserver(function(muts){
+  muts.forEach(function(m){
+    m.addedNodes.forEach(function(n){
+      if(n.nodeType!==1)return;
+      var tg=n.tagName&&n.tagName.toLowerCase();
+      if(tg==='script'&&n.getAttribute('src')){
+        var s=n.getAttribute('src');
+        if(!s.startsWith(PX)&&!s.startsWith('data:'))n.setAttribute('src',_p(_r(s)));
+      }
+      if(tg==='link'&&n.getAttribute('href')){
+        var h=n.getAttribute('href');
+        if(!h.startsWith(PX)&&!h.startsWith('data:'))n.setAttribute('href',_p(_r(h)));
+      }
+      if(tg==='img'&&n.getAttribute('src')){
+        var si=n.getAttribute('src');
+        if(!si.startsWith(PX)&&!si.startsWith('data:'))n.setAttribute('src',_p(_r(si)));
+      }
+      if(n.querySelectorAll){
+        n.querySelectorAll('img[src],script[src],link[href]').forEach(function(c){
+          var cs=c.getAttribute('src'),ch=c.getAttribute('href');
+          if(cs&&!cs.startsWith(PX)&&!cs.startsWith('data:'))c.setAttribute('src',_p(_r(cs)));
+          if(ch&&!ch.startsWith(PX)&&!ch.startsWith('data:'))c.setAttribute('href',_p(_r(ch)));
+        });
+      }
+    });
+  });
+}).observe(document.body||document.documentElement,{childList:true,subtree:true});
+
+})();`;
+    const s = document.createElement('script');
+    s.textContent = code;
+    $('pagebox').appendChild(s);
+  },
+
+  // ── Click handler ──
+  _onClick(e) {
+    let el = e.target;
+    while (el && el !== $('pagebox')) {
+      if (el.tagName === 'A') {
+        const pxh = el.getAttribute('data-pxhref');
+        if (pxh) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (pxh.startsWith('#')) {
+            try { document.querySelector(pxh)?.scrollIntoView({ behavior: 'smooth' }); } catch {}
+            return;
+          }
+          P.go(pxh);
+          return;
+        }
+        const rh = el.getAttribute('href');
+        if (rh && !rh.startsWith('#') && !rh.startsWith('javascript:') && !rh.startsWith('mailto:') && !rh.startsWith('tel:')) {
+          e.preventDefault();
+          e.stopPropagation();
+          P.go(resolve(rh, baseOf(P.cur)));
+          return;
+        }
+      }
+      el = el.parentElement;
+    }
+  },
+
+  // ── Form submit ──
+  _onSubmit(e) {
+    e.preventDefault();
+    const f = e.target;
+    const action = f.getAttribute('data-pxaction') || P.cur;
+    const method = f.getAttribute('data-pxmethod') || 'GET';
+    const fd = new FormData(f);
+
+    if (method === 'GET') {
+      const qs = new URLSearchParams(fd).toString();
+      P.go(action + (action.includes('?') ? '&' : '?') + qs);
+    } else {
+      P._post(action, fd);
+    }
+  },
+
+  // ── POST navigation ──
+  async _post(url, fd) {
+    P.cur = url;
+    $('url').value = url;
+    $('welcome').style.display = 'none';
+    $('errbox').style.display = 'none';
+    $('pagebox').style.display = 'none';
+    $('pagebox').innerHTML = '';
+    P._st('POST ' + url, 'ld');
+    P._ld(20);
+
+    const t0 = performance.now();
+    try {
+      const body = new URLSearchParams(fd).toString();
+      const r = await fetch(px(url), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const html = await r.text();
+      P._ld(60);
+      await P._renderHTML(html, url);
+
+      P.hist = P.hist.slice(0, P.hi + 1);
+      P.hist.push(url);
+      P.hi = P.hist.length - 1;
+      P._updnav();
+
+      const ms = Math.round(performance.now() - t0);
+      P._ld(100); setTimeout(() => P._ld(0), 400);
+      P._st('Loaded in ' + ms + 'ms','ok');
+    } catch (e) {
+      P._err('POST failed', e.message);
+      P._ld(0); P._st('Error','er');
+    }
+  },
+
+  // ══════════════════════════════════════════════════
+  // CSS REWRITING
+  // ══════════════════════════════════════════════════
+  _rwCSS(css, cssBase) {
+    return P._rwCSSUrls(css, cssBase)
+      .replace(/@import\s+["']([^"']+)["']/g, (_, u) => '@import "' + px(resolve(u, cssBase)) + '"')
+      .replace(/@import\s+url\(["']?([^"')]+)["']?\)/g, (_, u) => '@import url("' + px(resolve(u, cssBase)) + '")');
+  },
+
+  _rwCSSUrls(css, b) {
+    return css.replace(/url\(\s*["']?(?!data:)(?!blob:)(?!#)([^"')]+?)["']?\s*\)/g, (_, u) => {
+      return 'url("' + px(resolve(u.trim(), b)) + '")';
+    });
+  },
+
+  // ══════════════════════════════════════════════════
+  // NON-HTML RENDERERS
+  // ══════════════════════════════════════════════════
+  _renderJSON(raw) {
+    let pp; try { pp = JSON.stringify(JSON.parse(raw), null, 2); } catch { pp = raw; }
+    const pb = $('pagebox');
+    pb.innerHTML = '<pre style="padding:20px;background:#1e1e2e;color:#cdd6f4;font:13px/1.5 monospace;white-space:pre-wrap;word-break:break-all;min-height:100%">' +
+      pp.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</pre>';
+    pb.style.display = 'block';
+  },
+
+  _renderImg(url) {
+    const pb = $('pagebox');
+    pb.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100%;background:#111;padding:20px">' +
+      '<img src="' + px(url) + '" style="max-width:100%;max-height:90vh;border-radius:4px;box-shadow:0 4px 30px rgba(0,0,0,.5)"></div>';
+    pb.style.display = 'block';
+  },
+
+  _renderText(raw) {
+    const pb = $('pagebox');
+    pb.innerHTML = '<pre style="padding:20px;background:#fafafa;color:#333;font:13px/1.6 monospace;white-space:pre-wrap;word-break:break-all;min-height:100%">' +
+      raw.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</pre>';
+    pb.style.display = 'block';
+  },
+
+  // ══════════════════════════════════════════════════
+  // UI
+  // ══════════════════════════════════════════════════
+  _err(t, m) {
+    $('welcome').style.display = 'none';
+    $('pagebox').style.display = 'none';
+    $('errbox').style.display = 'block';
+    $('eT').textContent = t;
+    $('eM').textContent = m;
+  },
+
+  _st(t, s) {
+    $('stxt').textContent = t;
+    $('dot').className = 'dot' + (s === 'ld' ? ' ld' : s === 'er' ? ' er' : '');
+  },
+
+  _ld(pct) { $('lt').style.width = pct + '%'; },
+
+  _updnav() {
+    $('btnB').className = P.hi > 0 ? '' : 'dis';
+    $('btnF').className = P.hi < P.hist.length - 1 ? '' : 'dis';
+  }
+};
+
+window.P = P;
+</script>
+</body>
+</html>
